@@ -1,0 +1,24 @@
+{
+  "name": "collective-website",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kirbyperler/collective-website.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kirbyperler/collective-website/issues"
+  },
+  "homepage": "https://github.com/kirbyperler/collective-website#readme",
+  "dependencies": {
+    "mongodb": "^7.4.0"
+  }
+}

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Collective | Admin Dashboard</title>
+</head>
+
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="logo">C<span>ollective</span></div>
+
+      <nav class="nav">
+        <a class="active" href="#">admin</a>
+        <a href="#">players</a>
+        <a href="#">messages</a>
+        <a href="#">tasks</a>
+        <a href="#">files</a>
+        <a href="#">settings</a>
+      </nav>
+
+      <div class="admin-account">
+        <div>Admin Portal</div>
+        <small>Private Access</small>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <div class="brand-orb">C</div>
+
+      <nav class="side-nav">
+        <a class="active" href="#">Admin Home</a>
+        <a href="#">All Players</a>
+        <a href="#">Add User</a>
+        <a href="#">Messages</a>
+        <a href="#">Database</a>
+        <a href="#">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <section class="page-title">
+        <div>
+          <h1>Admin Dashboard</h1>
+          <p>
+            View player files, add new users, and message players from one operating system.
+          </p>
+        </div>
+
+        <button class="button" onclick="focusNewUserForm()">+ Add New User</button>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="card">
+          <div class="card-header">
+            <span>Players</span>
+            <span class="status" id="playerCount">0 users</span>
+          </div>
+
+          <div class="card-body">
+            <input
+              class="search"
+              id="playerSearch"
+              type="text"
+              placeholder="Search players..."
+              oninput="renderPlayerList()"
+            />
+
+            <div class="player-list" id="playerList"></div>
+          </div>
+        </article>
+
+        <section>
+          <article class="card">
+            <div class="card-header">
+              <span>Selected Player File</span>
+              <button class="button secondary">Open Full File</button>
+            </div>
+
+            <div class="card-body" id="selectedPlayer"></div>
+          </article>
+
+          <div class="section-grid">
+            <article class="card">
+              <div class="card-header">Add New User</div>
+
+              <div class="card-body">
+                <form class="form" id="newUserForm" onsubmit="addUser(event)">
+                  <div class="form-row">
+                    <label>
+                      First Name
+                      <input id="firstName" required />
+                    </label>
+
+                    <label>
+                      Last Name
+                      <input id="lastName" required />
+                    </label>
+                  </div>
+
+                  <div class="form-row">
+                    <label>
+                      Email
+                      <input id="email" type="email" required />
+                    </label>
+
+                    <label>
+                      Role
+                      <select id="role">
+                        <option>Player</option>
+                        <option>Advisor</option>
+                        <option>Video Coach</option>
+                        <option>Admin</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div class="form-row">
+                    <label>
+                      Position
+                      <input id="position" placeholder="Defenseman" />
+                    </label>
+
+                    <label>
+                      Birth Year
+                      <input id="birthYear" placeholder="2009" />
+                    </label>
+                  </div>
+
+                  <button class="button" type="submit">Create User</button>
+                </form>
+
+                <div class="db-note">
+                  Later, this form will call your backend, create the auth account, and insert the user into your database.
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-header">Database Preview</div>
+
+              <div class="card-body">
+                <div class="line-item">
+                  <span>players</span>
+                  <strong id="dbPlayers">0 rows</strong>
+                </div>
+
+                <div class="line-item">
+                  <span>messages</span>
+                  <strong id="dbMessages">0 rows</strong>
+                </div>
+
+                <div class="line-item">
+                  <span>tasks</span>
+                  <strong>8 rows</strong>
+                </div>
+
+                <div class="line-item">
+                  <span>recruiting</span>
+                  <strong>12 rows</strong>
+                </div>
+
+                <div class="db-note">
+                  This page is using mock data right now. The structure is ready for Supabase/PostgreSQL later.
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <aside class="card">
+          <div class="card-header">Message User</div>
+
+          <div class="card-body">
+            <form class="form" onsubmit="sendMessage(event)">
+              <label>
+                Send To
+                <select id="messageRecipient"></select>
+              </label>
+
+              <label>
+                Message Type
+                <select id="messageType">
+                  <option>Advisor Message</option>
+                  <option>Video Coach Message</option>
+                  <option>Collective Feed</option>
+                  <option>Admin Notice</option>
+                </select>
+              </label>
+
+              <label>
+                Message
+                <textarea id="messageText" placeholder="Write message..."></textarea>
+              </label>
+
+              <button class="button" type="submit">Send Message</button>
+            </form>
+
+            <div class="message-log" id="messageLog"></div>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
