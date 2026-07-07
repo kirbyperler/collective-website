@@ -6,11 +6,11 @@
     },
     {
       "source": "/admin",
-      "destination": "/frontEndPrivate/admin.html"
+      "destination": "/frontEndPrivate/adminDashboard.html"
     },
     {
       "source": "/dashboard",
-      "destination": "/frontEndPrivate/player-dashboard.html"
+      "destination": "/frontEndPrivate/playerDashboard.html"
     }
   ]
 }
