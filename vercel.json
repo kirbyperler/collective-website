@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/frontEnd/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/frontEndPrivate/admin.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/frontEndPrivate/player-dashboard.html"
+    }
+  ]
+}
