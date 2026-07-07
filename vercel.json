@@ -1,16 +1,3 @@
 {
-  "rewrites": [
-    {
-      "source": "/",
-      "destination": "/frontEnd/index.html"
-    },
-    {
-      "source": "/admin",
-      "destination": "/frontEndPrivate/adminDashboard.html"
-    },
-    {
-      "source": "/dashboard",
-      "destination": "/frontEndPrivate/playerDashboard.html"
-    }
-  ]
+  "cleanUrls": true
 }
