@@ -91,164 +91,31 @@
 
     <section class="inquiry-section">
 
-        <form
-            class="inquiry-form"                 >
-
-            <div class="form-row">
-
-                <div class="input-group">
-
-                    <label for="firstName">
-
-                        First Name *
-
-                    </label>
-
-                    <input
-                        type="text"
-                        id="firstName"
-                        name="firstName"
-                        required>
-
-                </div>
-
-                <div class="input-group">
-
-                    <label for="lastName">
-
-                        Last Name *
-
-                    </label>
-
-                    <input
-                        type="text"
-                        id="lastName"
-                        name="lastName"
-                        required>
-
-                </div>
-
-            </div>
-
-
-
-            <div class="form-row">
-
-                <div class="input-group">
-
-                    <label for="email">
-
-                        Email *
-
-                    </label>
-
-                    <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        required>
-
-                </div>
-
-                <div class="input-group">
-
-                    <label for="phone">
-
-                        Phone Number *
-
-                    </label>
-
-                    <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        required>
-
-                </div>
-
-            </div>
-
-
-
-            <div class="form-row">
-
-                <div class="input-group">
-
-                    <label for="birthYear">
-
-                        Birth Year
-
-                    </label>
-
-                    <input
-                        type="number"
-                        id="birthYear"
-                        name="birthYear">
-
-                </div>
-
-                <div class="input-group">
-
-                    <label for="team">
-
-                        Current Team
-
-                    </label>
-
-                    <input
-                        type="text"
-                        id="team"
-                        name="team">
-
-                </div>
-
-            </div>
-
-
-
-            <div class="input-group">
-
-                <label for="position">
-
-                    Position
-
-                </label>
-
-                <input
-                    type="text"
-                    id="position"
-                    name="position">
-
-            </div>
-
-
-
-            <div class="input-group">
-
-                <label for="goals">
-
-                    What are your goals?
-
-                </label>
-
-                <textarea
-                    id="goals"
-                    name="goals"
-                    rows="6"
-                    placeholder="Tell us about yourself, your goals, and why you're interested in Collective."></textarea>
-
-            </div>
-
-
-
-            <button
-                type="submit"
-                class="hero-button">
-
-                Submit Inquiry
-
-            </button>
-
+        <form id="inquiryForm">
+            <input id="firstName" placeholder="First Name" required>
+            <input id="lastName" placeholder="Last Name" required>
+
+            <select id="role" required>
+            <option value="">Select Role</option>
+                <option value="player">Player</option>
+                <option value="coach">Coach</option>
+                <option value="advisor">Advisor</option>
+            </select>
+
+            <select id="position">
+                <option value="">Select Position</option>
+                <option value="forward">Forward</option>
+                <option value="defense">Defense</option>
+                <option value="goalie">Goalie</option>
+            </select>
+
+            <input id="birthYear" placeholder="Birth Year" required>
+            <input id="phoneNumber" placeholder="Phone Number" required>
+            <input id="email" placeholder="Email" required>
+
+            <textarea id="goals" placeholder="Goals / why are you interested in Collective?" required></textarea>
+
+            <button type="submit">Submit Inquiry</button>
         </form>
 
     </section>
