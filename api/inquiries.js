@@ -6,10 +6,14 @@ module.exports = async function handler(req, res) {
 
     if (req.method === "POST") {
       const inquiry = {
-        name: req.body.name,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        role: req.body.role,
+        position: req.body.position || "",
+        birthYear: req.body.birthYear,
+        phoneNumber: req.body.phoneNumber,
         email: req.body.email,
-        phone: req.body.phone || "",
-        message: req.body.message,
+        goals: req.body.goals,
         status: "New",
         createdAt: new Date()
       };

@@ -84,7 +84,7 @@ if (inquiryForm) {
         };
 
         try {
-            const response = await fetch("/api/submit-inquiry", {
+            const response = await fetch("/api/inquiries", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
