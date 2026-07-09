@@ -2,158 +2,123 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inquiry | Collective</title>
+    <meta name="description" content="Start your Collective inquiry.">
 
-    <meta name="description"
-          content="Start your Collective inquiry.">
-
-    <link rel="preconnect"
-          href="https://fonts.googleapis.com">
-
-    <link rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossorigin>
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-          rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="css/styles.css">
-
     <script src="js/script.js" defer></script>
-
     <link rel="icon" href="images/collectivelogo1.png" type="image/png">
-
 </head>
 
-<body>
-
-    <!-- ================= NAVBAR ================= -->
+<body class="inquiry-page-body">
 
     <header class="navbar">
-
         <a href="index.html" class="logo">
-
-            <img src="images/collectivelogo1.png"
-                 alt="Collective Logo">
-
+            <img src="images/collectivelogo1.png" alt="Collective Logo">
         </a>
 
         <nav>
-
             <a href="index.html">Home</a>
-
             <a href="login.html">Login</a>
-
         </nav>
-
     </header>
 
+    <main class="subpage inquiry-page">
+        <section class="inquiry-hero">
+            <p class="section-title">REQUEST AN INTRODUCTION</p>
 
+            <h1>
+                Every athlete
+                starts with
+                a conversation.
+            </h1>
 
-    <!-- ================= HEADER ================= -->
+            <p>
+                Tell us a little about yourself.
+                We'll review every inquiry and
+                reach out if we believe Collective
+                is the right fit.
+            </p>
+        </section>
 
-    <section class="inquiry-hero">
+        <section class="inquiry-section">
+            <div class="inquiry-box">
+                <form id="inquiryForm" class="inquiry-form">
+                    <input id="firstName" name="firstName" type="text" placeholder="First Name" required>
+                    <input id="lastName" name="lastName" type="text" placeholder="Last Name" required>
 
-        <p class="section-title">
+                    <div class="form-label">Select Role</div>
+                    
+                    <div class="role-options">
+                        <label>
+                            <input type="radio" name="role" value="player" required>
+                            <span>Player</span>
+                        </label>
 
-            REQUEST AN INTRODUCTION
+                        <label>
+                            <input type="radio" name="role" value="coach">
+                            <span>Coach</span>
+                        </label>
 
-        </p>
+                        <label>
+                            <input type="radio" name="role" value="advisor">
+                            <span>Advisor</span>
+                        </label>
+                    </div>
 
-        <h1>
+                    <div id="positionContainer">
 
-            Every athlete
-            starts with
-            a conversation.
+                        <div id="hidden-label" class="form-label">Select Position</div>
 
-        </h1>
+                        <div class="position-options">
 
-        <p>
+                            <label>
+                                <input type="radio" name="position" value="forward">
+                                <span>Forward</span>
+                            </label>
 
-            Tell us a little about yourself.
-            We'll review every inquiry and
-            reach out if we believe Collective
-            is the right fit.
+                            <label>
+                                <input type="radio" name="position" value="defense">
+                                <span>Defense</span>
+                            </label>
 
-        </p>
+                            <label>
+                                <input type="radio" name="position" value="goalie">
+                                <span>Goalie</span>
+                            </label>
 
-    </section>
+                        </div>
 
+                    </div>
 
+                    <input id="birthYear" name="birthYear" type="number" placeholder="Birth Year" required>
+                    <input id="phoneNumber" name="phoneNumber" type="tel" placeholder="Phone Number" required>
+                    <input id="email" name="email" type="email" placeholder="Email" required>
 
-    <!-- ================= FORM ================= -->
+                    <textarea id="goals" name="goals" placeholder="Goals and why you're interested in Collective..." required></textarea>
 
-    <section class="inquiry-section">
-
-        <form id="inquiryForm">
-            <input id="firstName" placeholder="First Name" required>
-            <input id="lastName" placeholder="Last Name" required>
-
-            <select id="role" required>
-            <option value="">Select Role</option>
-                <option value="player">Player</option>
-                <option value="coach">Coach</option>
-                <option value="advisor">Advisor</option>
-            </select>
-
-            <select id="position">
-                <option value="">Select Position</option>
-                <option value="forward">Forward</option>
-                <option value="defense">Defense</option>
-                <option value="goalie">Goalie</option>
-            </select>
-
-            <input id="birthYear" placeholder="Birth Year" required>
-            <input id="phoneNumber" placeholder="Phone Number" required>
-            <input id="email" placeholder="Email" required>
-
-            <textarea id="goals" placeholder="Goals / why are you interested in Collective?" required></textarea>
-
-            <button type="submit">Submit Inquiry</button>
-        </form>
-
-    </section>
-
-
-
-    <!-- ================= FOOTER ================= -->
+                    <button type="submit">Submit Inquiry</button>
+                </form>
+            </div>
+        </section>
+    </main>
 
     <footer>
-
         <div>
-
-            <h3>
-
-                <img class="footer-logo" src="collectivelogo2.png">
-
-            </h3>
-
-            <p class="footer-text">
-
-                Private Development Ecosystem
-
-            </p>
-
+            <h3><img class="footer-logo" src="images/collectivelogo2.png" alt="Collective Logo"></h3>
+            <p class="footer-text">Private Development Ecosystem</p>
         </div>
 
         <div>
-
-            <a href="index.html">
-
-                Home
-
-            </a>
-
+            <a href="index.html">Home</a>
         </div>
-
     </footer>
 
 </body>
-
 </html>
