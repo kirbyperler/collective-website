@@ -65,7 +65,10 @@ function renderMetrics() {
   const players = users.filter(user => user.type === "Player").length;
   const coaches = users.filter(user => user.type === "Coach").length;
   const advisors = users.filter(user => user.type === "Advisor").length;
-  const files = users.reduce((total, user) => total + user.files.length, 0);
+  const files = users.reduce(
+    (total, user) => total + (user.files?.length || 0),
+    0
+  );
   const metrics = [["Users", users.length], ["Players", players], ["Coaches", coaches], ["Advisors", advisors], ["Inquiries", inquiries.length], ["Files", files], ["Messages", messages.length], ["Needs Action", inquiries.length]];
   document.getElementById("metricsGrid").innerHTML = metrics.map(([label, value]) => `<button class="metric-box" onclick="openDatabase('${label}')"><span>${label}</span><strong>${value}</strong></button>`).join("");
   document.getElementById("overviewFileTotal").textContent = files;
@@ -112,11 +115,12 @@ function resetUserForm() {
   renderUserWorkspace();
 }
 
-function saveUser(event) {
+async function saveUser(event) {
   event.preventDefault();
+
   const id = document.getElementById("userId").value;
-  const data = {
-    id: id || makeId("u"),
+
+  const userData = {
     firstName: document.getElementById("firstName").value.trim(),
     lastName: document.getElementById("lastName").value.trim(),
     email: document.getElementById("email").value.trim(),
@@ -124,23 +128,113 @@ function saveUser(event) {
     type: document.getElementById("type").value,
     birthYear: document.getElementById("birthYear").value.trim(),
     position: document.getElementById("position").value.trim(),
-    eliteProspects: document.getElementById("eliteProspects").value.trim(),
-    files: id ? users.find(user => user.id === id)?.files || [] : []
+    eliteProspects: document
+      .getElementById("eliteProspects")
+      .value.trim()
   };
-  const index = users.findIndex(user => user.id === id);
-  if (index >= 0) users[index] = data; else users.unshift(data);
-  selectedUserId = data.id;
-  renderEverything();
-  selectUser(data.id);
+
+  if (
+    !userData.firstName ||
+    !userData.lastName ||
+    !userData.email ||
+    !userData.type
+  ) {
+    alert("First name, last name, email, and type are required.");
+    return;
+  }
+
+  try {
+    const method = id ? "PATCH" : "POST";
+
+    const body = id
+      ? {
+          id,
+          ...userData
+        }
+      : userData;
+
+    const response = await fetch("/api/users", {
+      method,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to save user.");
+    }
+
+    if (id) {
+      selectedUserId = id;
+    } else {
+      selectedUserId = String(
+        data.user?._id ||
+        data.id ||
+        ""
+      );
+    }
+
+    await loadUsers();
+
+    alert(id ? "User updated successfully." : "User created successfully.");
+  } catch (error) {
+    console.error("Save user error:", error);
+    alert(error.message);
+  }
 }
 
-function deleteSelectedUser() {
-  const index = users.findIndex(user => user.id === selectedUserId);
-  if (index < 0 || !confirm("Delete this user?")) return;
-  users.splice(index, 1);
-  selectedUserId = users[0]?.id || null;
-  resetUserForm();
-  renderEverything();
+async function deleteSelectedUser() {
+  if (!selectedUserId) {
+    alert("Select a user first.");
+    return;
+  }
+
+  const user = users.find(function(item) {
+    return item.id === selectedUserId;
+  });
+
+  if (!user) {
+    alert("User not found.");
+    return;
+  }
+
+  const confirmed = confirm(
+    `Delete ${fullName(user)}? This cannot be undone.`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/users", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        id: selectedUserId
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to delete user.");
+    }
+
+    selectedUserId = null;
+
+    await loadUsers();
+
+    alert("User deleted successfully.");
+  } catch (error) {
+    console.error("Delete user error:", error);
+    alert(error.message);
+  }
 }
 
 function renderInquiryWorkspace() {
@@ -179,7 +273,15 @@ function fillSelects() {
 }
 
 function renderFiles() {
-  const files = users.flatMap(user => user.files.map(file => ({ file, user: fullName(user), userId: user.id })));
+  const files = users.flatMap(function(user) {
+    return (user.files || []).map(function(file) {
+      return {
+        file,
+        user: fullName(user),
+        userId: user.id
+      };
+    });
+  });
   document.getElementById("fileCountPill").textContent = `${files.length} files`;
   document.getElementById("fileList").innerHTML = files.map(item => `<div class="file-item"><strong>${item.file}</strong><p class="muted small">Assigned to ${item.user}</p><button class="text-button" onclick="removeFile('${item.userId}', '${item.file.replaceAll("'", "\\'")}')">Remove</button></div>`).join("") || `<p class="muted small">No files uploaded.</p>`;
 }
@@ -242,7 +344,13 @@ function databaseMetrics() {
     ["Coaches", users.filter(user => user.type === "Coach").length],
     ["Advisors", users.filter(user => user.type === "Advisor").length],
     ["Inquiries", inquiries.length],
-    ["Files", users.reduce((total, user) => total + user.files.length, 0)],
+    [
+      "Files",
+      users.reduce(
+        (total, user) => total + (user.files?.length || 0),
+        0
+      )
+    ],    
     ["Messages", messages.length],
     ["Needs Action", inquiries.length]
   ];
@@ -303,5 +411,4 @@ function renderEverything() {
   renderDatabase();
 }
 
-renderEverything();
-if (selectedUserId) selectUser(selectedUserId);
+loadUsers();

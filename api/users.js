@@ -40,7 +40,8 @@ module.exports = async function handler(req, res) {
         birthYear,
         position,
         email,
-        phone
+        phone,
+        eliteProspects
       } = req.body || {};
 
       if (!firstName || !lastName || !type || !email) {
@@ -67,6 +68,7 @@ module.exports = async function handler(req, res) {
         position: position || "",
         email: email.toLowerCase().trim(),
         phone: phone || "",
+        eliteProspects: eliteProspects || "",
         files: [],
         createdAt: new Date(),
         updatedAt: new Date()
@@ -107,6 +109,10 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({
       error: "Invalid user ID."
     });
+  }
+
+  if (eliteProspects !== undefined) {
+  updates.eliteProspects = eliteProspects;
   }
 
   const updates = {
