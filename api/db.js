@@ -1,19 +1,23 @@
 const { MongoClient } = require("mongodb");
 
-let client;
-let database;
+let cachedClient = null;
+let cachedDb = null;
 
-async function connectToDatabase() {
-  if (database) {
-    return database;
+async function getDb() {
+  if (cachedDb) {
+    return cachedDb;
   }
 
-  client = new MongoClient(process.env.MONGODB_URI);
+  const client = new MongoClient(process.env.MONGODB_URI);
+
   await client.connect();
 
-  database = client.db("collective");
+  cachedClient = client;
+  cachedDb = client.db("collective");
 
-  return database;
+  return cachedDb;
 }
 
-module.exports = connectToDatabase;
+module.exports = {
+  getDb
+};

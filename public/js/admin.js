@@ -1,264 +1,303 @@
-let players = [];
-let selectedPlayerId = null;
-
-let messages = [
-  {
-    to: "Owen Schwarz",
-    type: "Advisor Message",
-    text: "Great session today. Focus on your gap control.",
-    time: "2h ago"
-  },
-  {
-    to: "Ryan Carter",
-    type: "Admin Notice",
-    text: "Your new video review has been added.",
-    time: "1d ago"
-  }
+const users = [
+  { id: "u1", type: "Player", firstName: "Owen", lastName: "Schwarz", birthYear: "2009", email: "owen@collective.com", phone: "(203) 555-0141", position: "Defense", eliteProspects: "34 GP · 6 G · 15 A · 21 PTS", files: ["Development Plan.pdf", "Video Review 01.mp4"] },
+  { id: "u2", type: "Player", firstName: "Ryan", lastName: "Carter", birthYear: "2008", email: "ryan@collective.com", phone: "(203) 555-0174", position: "Forward", eliteProspects: "41 GP · 18 G · 22 A · 40 PTS", files: ["Recruiting Notes.pdf"] },
+  { id: "u3", type: "Coach", firstName: "Mike", lastName: "Walsh", birthYear: "", email: "mike@collective.com", phone: "(203) 555-0188", position: "", eliteProspects: "", files: ["Camp Roster.xlsx"] },
+  { id: "u4", type: "Advisor", firstName: "Ty", lastName: "Admin", birthYear: "", email: "ty@collective.com", phone: "(203) 555-0199", position: "", eliteProspects: "", files: ["Player Notes.pdf"] }
 ];
 
-async function loadPlayers() {
-  const response = await fetch("/api/players");
-  players = await response.json();
+const inquiries = [
+  { id: "i1", firstName: "Evan", lastName: "Brooks", role: "player", position: "Forward", birthYear: "2010", email: "evan@example.com", phoneNumber: "(203) 555-0160", goals: "Looking for development help before next season." },
+  { id: "i2", firstName: "Cole", lastName: "Anderson", role: "player", position: "Defense", birthYear: "2009", email: "cole@example.com", phoneNumber: "(203) 555-0181", goals: "Interested in video review and recruiting guidance." },
+  { id: "i3", firstName: "Matt", lastName: "Harris", role: "coach", position: "", birthYear: "", email: "matt@example.com", phoneNumber: "(203) 555-0109", goals: "Wants to discuss camp partnership opportunities." }
+];
 
-  if (players.length > 0) {
-    selectedPlayerId = players[0]._id;
-  }
+let messages = [
+  { id: "m1", userId: "u1", to: "Owen Schwarz", type: "Advisor Message", text: "Great session today. Focus on your gap control.", time: "2h ago" },
+  { id: "m2", userId: "u2", to: "Ryan Carter", type: "Admin Notice", text: "Your new video review has been added.", time: "1d ago" }
+];
 
-  renderEverything();
+let selectedUserId = users[0]?.id || null;
+let activeDatabaseFilter = "Users";
+
+function fullName(user) { return `${user.firstName} ${user.lastName}`.trim(); }
+function initials(name) { return name.split(" ").filter(Boolean).map(part => part[0]).join("").slice(0, 2).toUpperCase(); }
+function makeId(prefix) { return `${prefix}${Date.now()}${Math.floor(Math.random() * 1000)}`; }
+
+function showPage(pageName) {
+  document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
+  document.getElementById(`${pageName}Page`)?.classList.add("active");
+  document.querySelectorAll(".side-link").forEach(link => link.classList.toggle("active", link.dataset.page === pageName));
+  document.getElementById("topbarTitle").textContent = pageName[0].toUpperCase() + pageName.slice(1);
+  document.getElementById("sidebar").classList.remove("open");
 }
 
-function renderPlayerList() {
-  const searchValue = document.getElementById("playerSearch").value.toLowerCase();
+function toggleSidebar() { document.getElementById("sidebar").classList.toggle("open"); }
 
-  const filteredPlayers = players.filter((player) => {
-    return (
-      player.name.toLowerCase().includes(searchValue) ||
-      player.email.toLowerCase().includes(searchValue) ||
-      player.team.toLowerCase().includes(searchValue)
-    );
-  });
-
-  document.getElementById("playerList").innerHTML = filteredPlayers
-    .map((player) => {
-      return `
-        <button
-          class="player-button ${player._id === selectedPlayerId ? "active" : ""}"
-          onclick="selectPlayer('${player._id}')"
-        >
-          <div class="avatar">${getInitials(player.name)}</div>
-
-          <div>
-            <strong>${player.name}</strong>
-            <p class="muted small">${player.position} · ${player.team}</p>
-          </div>
-
-          <span class="status">${player.status}</span>
-        </button>
-      `;
-    })
-    .join("");
-
-  document.getElementById("playerCount").textContent = `${players.length} users`;
+function filteredUsers(inputId) {
+  const value = document.getElementById(inputId)?.value.toLowerCase().trim() || "";
+  return users.filter(user => `${fullName(user)} ${user.type} ${user.email} ${user.phone} ${user.position} ${user.birthYear}`.toLowerCase().includes(value));
 }
 
-function renderSelectedPlayer() {
-  const player = players.find((item) => item._id === selectedPlayerId);
-
-  if (!player) {
-    document.getElementById("selectedPlayer").innerHTML = `
-      <p class="muted">No player selected.</p>
-    `;
-    return;
-  }
-
-  document.getElementById("selectedPlayer").innerHTML = `
-    <div class="profile-top">
-      <div class="profile-avatar">${getInitials(player.name)}</div>
-
-      <div>
-        <h2>${player.name}</h2>
-        <p class="muted">${player.email}</p>
-        <p class="muted">${player.position} · ${player.birthYear} · ${player.team}</p>
-      </div>
-
-      <span class="status">${player.status}</span>
-    </div>
-
-    <div class="stat-grid">
-      <div class="stat-box">
-        <span>Role</span>
-        <strong>${player.role}</strong>
-      </div>
-
-      <div class="stat-box">
-        <span>Tasks Due</span>
-        <strong>${player.tasksDue}</strong>
-      </div>
-
-      <div class="stat-box">
-        <span>Unread</span>
-        <strong>${player.unreadMessages}</strong>
-      </div>
-
-      <div class="stat-box">
-        <span>Status</span>
-        <strong>${player.status}</strong>
-      </div>
-    </div>
-
-    <div class="section-grid">
-      <div class="mini-panel">
-        <h3>Staff</h3>
-
-        <div class="line-item">
-          <span>Advisor</span>
-          <strong>${player.advisor}</strong>
-        </div>
-
-        <div class="line-item">
-          <span>Video Coach</span>
-          <strong>${player.videoCoach}</strong>
-        </div>
-      </div>
-
-      <div class="mini-panel">
-        <h3>Quick Actions</h3>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="button secondary">View Dashboard</button>
-          <button class="button secondary">Edit User</button>
-          <button class="button secondary" onclick="prepareMessage('${player._id}')">
-            Message
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
+function renderOverviewUsers() {
+  const list = filteredUsers("overviewUserSearch").slice(0, 3);
+  document.getElementById("overviewUserTotal").textContent = users.length;
+  document.getElementById("overviewUserList").innerHTML = list.length ? list.map(user => `
+    <div class="preview-row">
+      <div><strong>${fullName(user)}</strong><p class="muted small">${user.type}${user.position ? ` · ${user.position}` : ""}</p></div>
+      <button onclick="openUser('${user.id}')">View</button>
+    </div>`).join("") : `<p class="muted small">No users found.</p>`;
 }
 
-function renderMessageRecipients() {
-  document.getElementById("messageRecipient").innerHTML = players
-    .map((player) => {
-      return `<option value="${player._id}">${player.name}</option>`;
-    })
-    .join("");
-
-  if (selectedPlayerId) {
-    document.getElementById("messageRecipient").value = selectedPlayerId;
-  }
+function renderOverviewInquiries() {
+  document.getElementById("overviewInquiryTotal").textContent = inquiries.length;
+  document.getElementById("overviewInquiryList").innerHTML = inquiries.slice(0, 2).map(inquiry => `
+    <div class="preview-row">
+      <div><strong>${inquiry.firstName} ${inquiry.lastName}</strong><p class="muted small">${inquiry.role}${inquiry.position ? ` · ${inquiry.position}` : ""}</p></div>
+      <button onclick="showPage('inquiries')">Review</button>
+    </div>`).join("") || `<p class="muted small">No open inquiries.</p>`;
 }
 
-function renderMessageLog() {
-  document.getElementById("messageLog").innerHTML = messages
-    .map((message) => {
-      return `
-        <div class="message">
-          <strong>${message.to}</strong>
-          <p>${message.type}</p>
-          <p>${message.text}</p>
-          <p class="muted small">${message.time}</p>
-        </div>
-      `;
-    })
-    .join("");
-
-  document.getElementById("dbMessages").textContent = `${messages.length} rows`;
+function renderMetrics() {
+  const players = users.filter(user => user.type === "Player").length;
+  const coaches = users.filter(user => user.type === "Coach").length;
+  const advisors = users.filter(user => user.type === "Advisor").length;
+  const files = users.reduce((total, user) => total + user.files.length, 0);
+  const metrics = [["Users", users.length], ["Players", players], ["Coaches", coaches], ["Advisors", advisors], ["Inquiries", inquiries.length], ["Files", files], ["Messages", messages.length], ["Needs Action", inquiries.length]];
+  document.getElementById("metricsGrid").innerHTML = metrics.map(([label, value]) => `<button class="metric-box" onclick="openDatabase('${label}')"><span>${label}</span><strong>${value}</strong></button>`).join("");
+  document.getElementById("overviewFileTotal").textContent = files;
+  document.getElementById("overviewMessageTotal").textContent = messages.length;
 }
 
-function renderDatabasePreview() {
-  document.getElementById("dbPlayers").textContent = `${players.length} rows`;
+function renderUserWorkspace() {
+  const list = filteredUsers("userWorkspaceSearch");
+  document.getElementById("userWorkspaceCount").textContent = `${list.length} users`;
+  document.getElementById("userWorkspaceList").innerHTML = list.map(user => `
+    <button class="user-button ${user.id === selectedUserId ? "active" : ""}" onclick="selectUser('${user.id}')">
+      <div class="avatar">${initials(fullName(user))}</div>
+      <div><strong>${fullName(user)}</strong><p class="muted small">${user.type} · ${user.email}</p></div>
+      <span class="pill">Edit</span>
+    </button>`).join("") || `<p class="muted small">No users found.</p>`;
 }
 
-function selectPlayer(id) {
-  selectedPlayerId = id;
-  renderPlayerList();
-  renderSelectedPlayer();
-  renderMessageRecipients();
+function openUser(id) { selectUser(id); showPage("users"); }
+
+function selectUser(id) {
+  selectedUserId = id;
+  const user = users.find(item => item.id === id);
+  if (!user) return;
+  document.getElementById("userFormTitle").textContent = `Update ${fullName(user)}`;
+  document.getElementById("userId").value = user.id;
+  document.getElementById("firstName").value = user.firstName;
+  document.getElementById("lastName").value = user.lastName;
+  document.getElementById("email").value = user.email;
+  document.getElementById("phone").value = user.phone;
+  document.getElementById("type").value = user.type;
+  document.getElementById("birthYear").value = user.birthYear;
+  document.getElementById("position").value = user.position;
+  document.getElementById("eliteProspects").value = user.eliteProspects;
+  document.getElementById("deleteUserButton").classList.remove("hidden");
+  renderUserWorkspace();
 }
 
-function prepareMessage(id) {
-  selectedPlayerId = id;
-  renderPlayerList();
-  renderSelectedPlayer();
-  renderMessageRecipients();
-
-  document.getElementById("messageText").focus();
+function resetUserForm() {
+  selectedUserId = null;
+  document.getElementById("userForm").reset();
+  document.getElementById("userId").value = "";
+  document.getElementById("userFormTitle").textContent = "Add User";
+  document.getElementById("deleteUserButton").classList.add("hidden");
+  renderUserWorkspace();
 }
 
-async function addUser(event) {
+function saveUser(event) {
   event.preventDefault();
-
-  const newPlayer = {
+  const id = document.getElementById("userId").value;
+  const data = {
+    id: id || makeId("u"),
     firstName: document.getElementById("firstName").value.trim(),
     lastName: document.getElementById("lastName").value.trim(),
     email: document.getElementById("email").value.trim(),
-    role: document.getElementById("role").value,
+    phone: document.getElementById("phone").value.trim(),
+    type: document.getElementById("type").value,
+    birthYear: document.getElementById("birthYear").value.trim(),
     position: document.getElementById("position").value.trim(),
-    birthYear: document.getElementById("birthYear").value.trim()
+    eliteProspects: document.getElementById("eliteProspects").value.trim(),
+    files: id ? users.find(user => user.id === id)?.files || [] : []
   };
-
-  const response = await fetch("/api/players", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(newPlayer)
-  });
-
-  const data = await response.json();
-
-  if (response.ok) {
-    alert("Player created successfully");
-    document.getElementById("newUserForm").reset();
-    await loadPlayers();
-  } else {
-    alert(data.message || "Something went wrong");
-  }
+  const index = users.findIndex(user => user.id === id);
+  if (index >= 0) users[index] = data; else users.unshift(data);
+  selectedUserId = data.id;
+  renderEverything();
+  selectUser(data.id);
 }
 
-function sendMessage(event) {
-  event.preventDefault();
-
-  const recipientId = document.getElementById("messageRecipient").value;
-  const recipient = players.find((player) => player._id === recipientId);
-  const text = document.getElementById("messageText").value.trim();
-
-  if (!recipient || !text) {
-    return;
-  }
-
-  messages.unshift({
-    to: recipient.name,
-    type: document.getElementById("messageType").value,
-    text: text,
-    time: "Just now"
-  });
-
-  recipient.unreadMessages += 1;
-  document.getElementById("messageText").value = "";
-
+function deleteSelectedUser() {
+  const index = users.findIndex(user => user.id === selectedUserId);
+  if (index < 0 || !confirm("Delete this user?")) return;
+  users.splice(index, 1);
+  selectedUserId = users[0]?.id || null;
+  resetUserForm();
   renderEverything();
 }
 
-function focusNewUserForm() {
-  document.getElementById("firstName").focus();
+function renderInquiryWorkspace() {
+  const value = document.getElementById("inquirySearch")?.value.toLowerCase().trim() || "";
+  const list = inquiries.filter(inquiry => `${inquiry.firstName} ${inquiry.lastName} ${inquiry.email} ${inquiry.role} ${inquiry.position}`.toLowerCase().includes(value));
+  document.getElementById("inquiryWorkspaceList").innerHTML = list.map(inquiry => `
+    <article class="card inquiry-item">
+      <strong>${inquiry.firstName} ${inquiry.lastName}</strong>
+      <p class="muted small">${inquiry.role}${inquiry.position ? ` · ${inquiry.position}` : ""}${inquiry.birthYear ? ` · ${inquiry.birthYear}` : ""}</p>
+      <p class="muted small">${inquiry.email} · ${inquiry.phoneNumber}</p>
+      <p class="muted small">${inquiry.goals}</p>
+      <div class="action-row"><button class="button" onclick="acceptInquiry('${inquiry.id}')">Accept</button><button class="button secondary" onclick="deleteInquiry('${inquiry.id}')">Delete</button></div>
+    </article>`).join("") || `<p class="muted">No inquiries found.</p>`;
 }
 
-function getInitials(name) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+function acceptInquiry(id) {
+  const inquiry = inquiries.find(item => item.id === id);
+  if (!inquiry || !confirm("Accept this inquiry and create a user?")) return;
+  const user = { id: makeId("u"), type: inquiry.role[0].toUpperCase() + inquiry.role.slice(1), firstName: inquiry.firstName, lastName: inquiry.lastName, birthYear: inquiry.birthYear, email: inquiry.email, phone: inquiry.phoneNumber, position: inquiry.position, eliteProspects: "", files: [] };
+  users.unshift(user);
+  inquiries.splice(inquiries.findIndex(item => item.id === id), 1);
+  selectedUserId = user.id;
+  renderEverything();
+}
+
+function deleteInquiry(id) {
+  const index = inquiries.findIndex(item => item.id === id);
+  if (index < 0 || !confirm("Delete this inquiry?")) return;
+  inquiries.splice(index, 1);
+  renderEverything();
+}
+
+function fillSelects() {
+  const options = users.map(user => `<option value="${user.id}">${fullName(user)} · ${user.type}</option>`).join("");
+  ["overviewFileUser", "fileWorkspaceUser", "overviewMessageRecipient", "messageRecipient"].forEach(id => { const element = document.getElementById(id); if (element) element.innerHTML = options; });
+}
+
+function renderFiles() {
+  const files = users.flatMap(user => user.files.map(file => ({ file, user: fullName(user), userId: user.id })));
+  document.getElementById("fileCountPill").textContent = `${files.length} files`;
+  document.getElementById("fileList").innerHTML = files.map(item => `<div class="file-item"><strong>${item.file}</strong><p class="muted small">Assigned to ${item.user}</p><button class="text-button" onclick="removeFile('${item.userId}', '${item.file.replaceAll("'", "\\'")}')">Remove</button></div>`).join("") || `<p class="muted small">No files uploaded.</p>`;
+}
+
+function addFileToUser(userId, fileName) {
+  const user = users.find(item => item.id === userId);
+  if (!user || !fileName) return false;
+  user.files.unshift(fileName);
+  renderEverything();
+  return true;
+}
+
+function uploadOverviewFile() {
+  const input = document.getElementById("overviewFileInput");
+  if (addFileToUser(document.getElementById("overviewFileUser").value, input.files[0]?.name)) input.value = "";
+}
+
+function uploadWorkspaceFile(event) {
+  event.preventDefault();
+  const input = document.getElementById("fileWorkspaceInput");
+  if (addFileToUser(document.getElementById("fileWorkspaceUser").value, input.files[0]?.name)) event.target.reset();
+}
+
+function removeFile(userId, fileName) {
+  const user = users.find(item => item.id === userId);
+  if (!user || !confirm("Remove this file?")) return;
+  user.files = user.files.filter(file => file !== fileName);
+  renderEverything();
+}
+
+function addMessage(userId, type, text) {
+  const user = users.find(item => item.id === userId);
+  if (!user || !text.trim()) return false;
+  messages.unshift({ id: makeId("m"), userId, to: fullName(user), type, text: text.trim(), time: "Just now" });
+  renderEverything();
+  return true;
+}
+
+function sendOverviewMessage() {
+  const input = document.getElementById("overviewMessageText");
+  if (addMessage(document.getElementById("overviewMessageRecipient").value, "Admin Notice", input.value)) input.value = "";
+}
+
+function sendWorkspaceMessage(event) {
+  event.preventDefault();
+  const input = document.getElementById("messageText");
+  if (addMessage(document.getElementById("messageRecipient").value, document.getElementById("messageType").value, input.value)) event.target.reset();
+}
+
+function renderMessages() {
+  document.getElementById("messageCountPill").textContent = `${messages.length} messages`;
+  document.getElementById("messageWorkspaceList").innerHTML = messages.map(message => `<div class="message-item"><strong>${message.to}</strong><p class="muted small">${message.type} · ${message.time}</p><p class="muted small">${message.text}</p></div>`).join("") || `<p class="muted small">No messages yet.</p>`;
+}
+
+
+function databaseMetrics() {
+  return [
+    ["Users", users.length],
+    ["Players", users.filter(user => user.type === "Player").length],
+    ["Coaches", users.filter(user => user.type === "Coach").length],
+    ["Advisors", users.filter(user => user.type === "Advisor").length],
+    ["Inquiries", inquiries.length],
+    ["Files", users.reduce((total, user) => total + user.files.length, 0)],
+    ["Messages", messages.length],
+    ["Needs Action", inquiries.length]
+  ];
+}
+
+function openDatabase(filter) {
+  activeDatabaseFilter = filter || "Users";
+  renderDatabase();
+  showPage("database");
+}
+
+function renderDatabase() {
+  const metricList = document.getElementById("databaseMetricList");
+  const results = document.getElementById("databaseResults");
+  if (!metricList || !results) return;
+
+  const metrics = databaseMetrics();
+  metricList.innerHTML = metrics.map(([label, value]) => `
+    <button class="database-filter-button ${activeDatabaseFilter === label ? "active" : ""}" onclick="openDatabase('${label}')">
+      <span>${label}</span><strong>${value}</strong>
+    </button>`).join("");
+
+  let records = [];
+  if (activeDatabaseFilter === "Users") records = users;
+  if (activeDatabaseFilter === "Players") records = users.filter(user => user.type === "Player");
+  if (activeDatabaseFilter === "Coaches") records = users.filter(user => user.type === "Coach");
+  if (activeDatabaseFilter === "Advisors") records = users.filter(user => user.type === "Advisor");
+  if (activeDatabaseFilter === "Inquiries" || activeDatabaseFilter === "Needs Action") records = inquiries;
+  if (activeDatabaseFilter === "Files") records = users.flatMap(user => user.files.map(file => ({ file, user: fullName(user), userId: user.id })));
+  if (activeDatabaseFilter === "Messages") records = messages;
+
+  document.getElementById("databaseResultTitle").textContent = activeDatabaseFilter;
+  document.getElementById("databaseResultCount").textContent = `${records.length} records`;
+  document.getElementById("databaseSubtitle").textContent = `Showing all ${activeDatabaseFilter.toLowerCase()} records.`;
+
+  if (["Users", "Players", "Coaches", "Advisors"].includes(activeDatabaseFilter)) {
+    results.innerHTML = records.map(user => `<div class="database-record"><strong>${fullName(user)}</strong><p class="muted small">${user.type}${user.position ? ` · ${user.position}` : ""}${user.birthYear ? ` · ${user.birthYear}` : ""}</p><p class="muted small">${user.email} · ${user.phone || "No phone"}</p><button class="text-button" onclick="openUser('${user.id}')">Open user</button></div>`).join("");
+  } else if (["Inquiries", "Needs Action"].includes(activeDatabaseFilter)) {
+    results.innerHTML = records.map(inquiry => `<div class="database-record"><strong>${inquiry.firstName} ${inquiry.lastName}</strong><p class="muted small">${inquiry.role}${inquiry.position ? ` · ${inquiry.position}` : ""}</p><p class="muted small">${inquiry.email}</p><button class="text-button" onclick="showPage('inquiries')">Review inquiry</button></div>`).join("");
+  } else if (activeDatabaseFilter === "Files") {
+    results.innerHTML = records.map(item => `<div class="database-record"><strong>${item.file}</strong><p class="muted small">Assigned to ${item.user}</p><button class="text-button" onclick="openUser('${item.userId}')">Open user</button></div>`).join("");
+  } else if (activeDatabaseFilter === "Messages") {
+    results.innerHTML = records.map(message => `<div class="database-record"><strong>${message.to}</strong><p class="muted small">${message.type} · ${message.time}</p><p class="muted small">${message.text}</p></div>`).join("");
+  }
+
+  if (!records.length) results.innerHTML = `<p class="muted small">No records found.</p>`;
 }
 
 function renderEverything() {
-  renderPlayerList();
-  renderSelectedPlayer();
-  renderMessageRecipients();
-  renderMessageLog();
-  renderDatabasePreview();
+  renderOverviewUsers();
+  renderOverviewInquiries();
+  renderMetrics();
+  renderUserWorkspace();
+  renderInquiryWorkspace();
+  fillSelects();
+  renderFiles();
+  renderMessages();
+  renderDatabase();
 }
 
-loadPlayers();
+renderEverything();
+if (selectedUserId) selectUser(selectedUserId);

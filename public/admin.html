@@ -4,205 +4,172 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Collective | Admin Dashboard</title>
-  <link rel="stylesheet" href="css/admin.css">
-  <script src="js/admin.js" defer></script>
-  <link rel="icon" href="images/collectivelogo1.png" type="image/png">
+  <link rel="stylesheet" href="admin.css" />
+  <script src="admin.js" defer></script>
 </head>
-
 <body>
-  <div class="app">
+  <div class="admin-shell">
     <header class="topbar">
-      <div class="logo">C<span>ollective</span></div>
-
-      <nav class="nav">
-        <a class="active" href="#">admin</a>
-        <a href="#">players</a>
-        <a href="#">messages</a>
-        <a href="#">tasks</a>
-        <a href="#">files</a>
-        <a href="#">settings</a>
-      </nav>
-
-      <div class="admin-account">
-        <div>Admin Portal</div>
-        <small>Private Access</small>
-      </div>
+      <button class="mobile-menu" type="button" onclick="toggleSidebar()">Menu</button>
+      <a class="logo" href="#" onclick="showPage('overview')">Collective</a>
+      <p class="topbar-title" id="topbarTitle">Overview</p>
+      <button class="logout-button" type="button">Log Out</button>
     </header>
 
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="brand-orb">C</div>
-
       <nav class="side-nav">
-        <a class="active" href="#">Admin Home</a>
-        <a href="#">All Players</a>
-        <a href="#">Add User</a>
-        <a href="#">Messages</a>
-        <a href="#">Database</a>
-        <a href="#">Settings</a>
+        <button class="side-link active" data-page="overview" onclick="showPage('overview')">Overview</button>
+        <button class="side-link" data-page="users" onclick="showPage('users')">Users</button>
+        <button class="side-link" data-page="inquiries" onclick="showPage('inquiries')">Inquiries</button>
+        <button class="side-link" data-page="files" onclick="showPage('files')">Files</button>
+        <button class="side-link" data-page="messages" onclick="showPage('messages')">Messages</button>
+        <button class="side-link" data-page="database" onclick="showPage('database')">Database</button>
       </nav>
     </aside>
 
     <main class="main">
-      <section class="page-title">
-        <div>
-          <h1>Admin Dashboard</h1>
-          <p>
-            View player files, add new users, and message players from one operating system.
-          </p>
-        </div>
-
-        <button class="button" onclick="focusNewUserForm()">+ Add New User</button>
-      </section>
-
-      <section class="dashboard-grid">
-        <article class="card">
-          <div class="card-header">
-            <span>Players</span>
-            <span class="status" id="playerCount">0 users</span>
-          </div>
-
-          <div class="card-body">
-            <input
-              class="search"
-              id="playerSearch"
-              type="text"
-              placeholder="Search players..."
-              oninput="renderPlayerList()"
-            />
-
-            <div class="player-list" id="playerList"></div>
-          </div>
-        </article>
-
-        <section>
-          <article class="card">
-            <div class="card-header">
-              <span>Selected Player File</span>
-              <button class="button secondary">Open Full File</button>
+      <section class="page active" id="overviewPage">
+        <div class="overview-grid">
+          <article class="card welcome-card">
+            <div>
+              <p class="eyebrow">Admin Portal</p>
+              <h1>Welcome back, Ty</h1>
+              <p class="muted">Everything important is available here.</p>
             </div>
-
-            <div class="card-body" id="selectedPlayer"></div>
           </article>
 
-          <div class="section-grid">
-            <article class="card">
-              <div class="card-header">Add New User</div>
+          <article class="card overview-card users-card">
+            <div class="card-header"><span>Users</span><button class="open-button" onclick="showPage('users')">Open</button></div>
+            <div class="card-body compact-body">
+              <div class="summary-number" id="overviewUserTotal">0</div>
+              <p class="muted small">players, coaches, and advisors</p>
+              <input class="search" id="overviewUserSearch" placeholder="Search users..." oninput="renderOverviewUsers()" />
+              <div class="preview-list" id="overviewUserList"></div>
+            </div>
+          </article>
 
-              <div class="card-body">
-                <form class="form" id="newUserForm" onsubmit="addUser(event)">
-                  <div class="form-row">
-                    <label>
-                      First Name
-                      <input id="firstName" required />
-                    </label>
+          <article class="card overview-card inquiries-card">
+            <div class="card-header"><span>Inquiries</span><button class="open-button" onclick="showPage('inquiries')">Open</button></div>
+            <div class="card-body compact-body">
+              <div class="summary-number" id="overviewInquiryTotal">0</div>
+              <p class="muted small">waiting for review</p>
+              <div class="preview-list" id="overviewInquiryList"></div>
+            </div>
+          </article>
 
-                    <label>
-                      Last Name
-                      <input id="lastName" required />
-                    </label>
-                  </div>
+          <article class="card overview-card metrics-card">
+            <div class="card-header"><span>Database</span><button class="open-button" onclick="openDatabase('Users')">Open</button></div>
+            <div class="metrics-grid" id="metricsGrid"></div>
+          </article>
 
-                  <div class="form-row">
-                    <label>
-                      Email
-                      <input id="email" type="email" required />
-                    </label>
+          <article class="card overview-card files-card">
+            <div class="card-header"><span>Files</span><button class="open-button" onclick="showPage('files')">Open</button></div>
+            <div class="card-body compact-body">
+              <div class="overview-inline-summary"><strong id="overviewFileTotal">0</strong><span class="muted small">assigned files</span></div>
+              <select class="field" id="overviewFileUser"></select>
+              <input class="field" type="file" id="overviewFileInput" />
+              <button class="button full" onclick="uploadOverviewFile()">Upload File</button>
+            </div>
+          </article>
 
-                    <label>
-                      Role
-                      <select id="role">
-                        <option>Player</option>
-                        <option>Advisor</option>
-                        <option>Video Coach</option>
-                        <option>Admin</option>
-                      </select>
-                    </label>
-                  </div>
+          <article class="card overview-card messages-card">
+            <div class="card-header"><span>Messages</span><button class="open-button" onclick="showPage('messages')">Open</button></div>
+            <div class="card-body compact-body">
+              <div class="overview-inline-summary"><strong id="overviewMessageTotal">0</strong><span class="muted small">sent messages</span></div>
+              <select class="field" id="overviewMessageRecipient"></select>
+              <input class="field" id="overviewMessageText" placeholder="Quick message..." />
+              <button class="button full" onclick="sendOverviewMessage()">Send Message</button>
+            </div>
+          </article>
+        </div>
+      </section>
 
-                  <div class="form-row">
-                    <label>
-                      Position
-                      <input id="position" placeholder="Defenseman" />
-                    </label>
-
-                    <label>
-                      Birth Year
-                      <input id="birthYear" placeholder="2009" />
-                    </label>
-                  </div>
-
-                  <button class="button" type="submit">Create User</button>
-                </form>
-
-                <div class="db-note">
-                  Later, this form will call your backend, create the auth account, and insert the user into your database.
-                </div>
-              </div>
-            </article>
-
-            <article class="card">
-              <div class="card-header">Database Preview</div>
-
-              <div class="card-body">
-                <div class="line-item">
-                  <span>players</span>
-                  <strong id="dbPlayers">0 rows</strong>
-                </div>
-
-                <div class="line-item">
-                  <span>messages</span>
-                  <strong id="dbMessages">0 rows</strong>
-                </div>
-
-                <div class="line-item">
-                  <span>tasks</span>
-                  <strong>8 rows</strong>
-                </div>
-
-                <div class="line-item">
-                  <span>recruiting</span>
-                  <strong>12 rows</strong>
-                </div>
-
-                <div class="db-note">
-                  This page is using mock data right now. The structure is ready for Supabase/PostgreSQL later.
-                </div>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <aside class="card">
-          <div class="card-header">Message User</div>
-
-          <div class="card-body">
-            <form class="form" onsubmit="sendMessage(event)">
-              <label>
-                Send To
-                <select id="messageRecipient"></select>
-              </label>
-
-              <label>
-                Message Type
-                <select id="messageType">
-                  <option>Advisor Message</option>
-                  <option>Video Coach Message</option>
-                  <option>Collective Feed</option>
-                  <option>Admin Notice</option>
-                </select>
-              </label>
-
-              <label>
-                Message
-                <textarea id="messageText" placeholder="Write message..."></textarea>
-              </label>
-
-              <button class="button" type="submit">Send Message</button>
+      <section class="page" id="usersPage">
+        <div class="workspace-header">
+          <div><p class="eyebrow">Manage</p><h2>Users</h2></div>
+          <input class="search wide" id="userWorkspaceSearch" placeholder="Search users..." oninput="renderUserWorkspace()" />
+        </div>
+        <div class="two-column-workspace users-workspace">
+          <article class="card">
+            <div class="card-header"><span>All Users</span><span class="pill" id="userWorkspaceCount">0 users</span></div>
+            <div class="workspace-list inside-card" id="userWorkspaceList"></div>
+          </article>
+          <article class="card">
+            <div class="card-header"><span id="userFormTitle">Add User</span><button class="text-button" onclick="resetUserForm()">Clear</button></div>
+            <form class="admin-form" id="userForm" onsubmit="saveUser(event)">
+              <input type="hidden" id="userId" />
+              <div class="form-row"><input id="firstName" placeholder="First name" required /><input id="lastName" placeholder="Last name" required /></div>
+              <div class="form-row"><input id="email" type="email" placeholder="Email" required /><input id="phone" placeholder="Phone number" /></div>
+              <div class="form-row"><select id="type"><option>Player</option><option>Coach</option><option>Advisor</option></select><input id="birthYear" placeholder="Birth year" /></div>
+              <div class="form-row"><input id="position" placeholder="Position" /><input id="eliteProspects" placeholder="Stats or Elite Prospects URL" /></div>
+              <button class="button full">Save User</button>
+              <button class="button secondary full hidden" id="deleteUserButton" type="button" onclick="deleteSelectedUser()">Delete User</button>
             </form>
+          </article>
+        </div>
+      </section>
 
-            <div class="message-log" id="messageLog"></div>
-          </div>
-        </aside>
+      <section class="page" id="inquiriesPage">
+        <div class="workspace-header">
+          <div><p class="eyebrow">Review</p><h2>Inquiries</h2></div>
+          <input class="search wide" id="inquirySearch" placeholder="Search inquiries..." oninput="renderInquiryWorkspace()" />
+        </div>
+        <div class="workspace-list cards-list" id="inquiryWorkspaceList"></div>
+      </section>
+
+      <section class="page" id="filesPage">
+        <div class="workspace-header"><div><p class="eyebrow">Library</p><h2>Files</h2></div></div>
+        <div class="two-column-workspace">
+          <article class="card">
+            <div class="card-header"><span>Upload File</span></div>
+            <form class="admin-form" onsubmit="uploadWorkspaceFile(event)">
+              <select id="fileWorkspaceUser"></select>
+              <input type="file" id="fileWorkspaceInput" required />
+              <textarea id="fileNote" placeholder="Optional note..."></textarea>
+              <button class="button full">Upload And Assign</button>
+            </form>
+          </article>
+          <article class="card">
+            <div class="card-header"><span>All Files</span><span class="pill" id="fileCountPill">0 files</span></div>
+            <div class="workspace-list inside-card" id="fileList"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" id="messagesPage">
+        <div class="workspace-header"><div><p class="eyebrow">Communication</p><h2>Messages</h2></div></div>
+        <div class="two-column-workspace">
+          <article class="card">
+            <div class="card-header"><span>Send Message</span></div>
+            <form class="admin-form" onsubmit="sendWorkspaceMessage(event)">
+              <select id="messageRecipient"></select>
+              <select id="messageType"><option>Admin Notice</option><option>Advisor Message</option><option>Video Coach Message</option><option>File Update</option></select>
+              <textarea id="messageText" placeholder="Write message..." required></textarea>
+              <button class="button full">Send Message</button>
+            </form>
+          </article>
+          <article class="card">
+            <div class="card-header"><span>Message Log</span><span class="pill" id="messageCountPill">0 messages</span></div>
+            <div class="workspace-list inside-card" id="messageWorkspaceList"></div>
+          </article>
+        </div>
+      </section>
+      <section class="page" id="databasePage">
+        <div class="workspace-header database-header">
+          <div><p class="eyebrow">Records</p><h2>Database</h2></div>
+          <p class="muted" id="databaseSubtitle">Select a category to view its records.</p>
+        </div>
+        <div class="database-layout">
+          <article class="card database-metrics-card">
+            <div class="card-header"><span>Collections</span></div>
+            <div class="database-metric-list" id="databaseMetricList"></div>
+          </article>
+          <article class="card database-results-card">
+            <div class="card-header"><span id="databaseResultTitle">All Users</span><span class="pill" id="databaseResultCount">0 records</span></div>
+            <div class="workspace-list inside-card database-results" id="databaseResults"></div>
+          </article>
+        </div>
       </section>
     </main>
   </div>
