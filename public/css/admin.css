@@ -52,6 +52,11 @@ h2 { font-size: clamp(32px, 4vw, 50px); letter-spacing: -2px; }
 .summary-number { font-size: 42px; font-weight: 900; line-height: 1; }
 
 .search, .field, .admin-form input, .admin-form select, .admin-form textarea { width: 100%; border: 1px solid var(--line); background: rgba(0,0,0,.34); color: var(--cream); border-radius: 10px; padding: 11px 12px; outline: none; }
+.admin-form select option,
+.field option {
+  color: #111111;
+  background: var(--cream);
+}
 input[type="file"] { color: var(--cream-dim); }
 textarea { resize: vertical; min-height: 110px; }
 .preview-list { display: grid; gap: 7px; max-height: 112px; overflow-y: auto; }
@@ -63,7 +68,6 @@ textarea { resize: vertical; min-height: 110px; }
 .button:hover { background: rgba(214,47,42,.28); }
 .button.secondary { border-color: var(--line); background: rgba(241,238,223,.055); }
 .button.full { width: 100%; }
-.hidden { display: none !important; }
 .pill { border: 1px solid var(--line); background: rgba(241,238,223,.05); border-radius: 999px; padding: 5px 8px; color: var(--cream-dim); font-size: 11px; }
 
 .metrics-grid { padding: 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
@@ -76,7 +80,15 @@ textarea { resize: vertical; min-height: 110px; }
 .two-column-workspace { display: grid; grid-template-columns: 1.25fr .9fr; gap: 14px; min-height: 0; }
 .workspace-list.inside-card { max-height: calc(100vh - 190px); overflow-y: auto; padding: 12px; }
 .cards-list { display: grid; grid-template-columns: repeat(3, minmax(240px, 1fr)); gap: 12px; }
-.admin-form { display: grid; gap: 10px; padding: 14px; }
+.admin-form {
+  height: calc(100% - 50px);
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  align-content: start;
+  overflow-y: auto;
+  min-height: 0;
+}
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .user-button { width: 100%; display: grid; grid-template-columns: 42px 1fr auto; gap: 10px; align-items: center; color: var(--cream); text-align: left; margin-bottom: 8px; cursor: pointer; }
 .user-button.active { border-color: rgba(214,47,42,.5); background: rgba(214,47,42,.1); }
@@ -157,4 +169,68 @@ body { height: 100vh; overflow: hidden; }
 @media (max-width: 800px) {
   .overview-grid, .database-layout { grid-template-columns: 1fr; }
   .metrics-card { grid-column: auto; }
+}
+
+/* USER FORM FIXES */
+
+.hidden {
+  display: none !important;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+}
+
+.form-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.button.danger {
+  color: #ff7772;
+  background: rgba(214, 47, 42, 0.12);
+  border-color: rgba(214, 47, 42, 0.5);
+}
+
+.button.danger:hover {
+  color: #ffffff;
+  background: rgba(214, 47, 42, 0.3);
+  border-color: var(--red);
+}
+
+#eliteProspects {
+  min-height: 100px;
+  resize: vertical;
+}
+
+#userForm {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.admin-form::-webkit-scrollbar,
+#userForm::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-form::-webkit-scrollbar-track,
+#userForm::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 999px;
+}
+
+.admin-form::-webkit-scrollbar-thumb,
+#userForm::-webkit-scrollbar-thumb {
+  background: rgba(241, 238, 223, 0.22);
+  border-radius: 999px;
 }

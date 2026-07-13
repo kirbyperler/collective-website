@@ -2,176 +2,1096 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
   <title>Collective | Admin Dashboard</title>
-  <link rel="stylesheet" href="css/admin.css" />
-  <script src="js/admin.js" defer></script>
+
+  <link
+    rel="stylesheet"
+    href="css/admin.css"
+  />
+
+  <script
+    src="js/admin.js"
+    defer
+  ></script>
 </head>
+
 <body>
   <div class="admin-shell">
+
+    <!-- TOPBAR -->
     <header class="topbar">
-      <button class="mobile-menu" type="button" onclick="toggleSidebar()">Menu</button>
-      <a class="logo" href="#" onclick="showPage('overview')">Collective</a>
-      <p class="topbar-title" id="topbarTitle">Overview</p>
-      <button class="logout-button" type="button">Log Out</button>
+
+      <button
+        class="mobile-menu"
+        type="button"
+        onclick="toggleSidebar()"
+      >
+        Menu
+      </button>
+
+      <a
+        class="logo"
+        href="#"
+        onclick="showPage('overview')"
+      >
+        Collective
+      </a>
+
+      <p
+        class="topbar-title"
+        id="topbarTitle"
+      >
+        Overview
+      </p>
+
+      <button
+        class="logout-button"
+        type="button"
+      >
+        Log Out
+      </button>
+
     </header>
 
-    <aside class="sidebar" id="sidebar">
-      <div class="brand-orb">C</div>
+
+    <!-- SIDEBAR -->
+    <aside
+      class="sidebar"
+      id="sidebar"
+    >
+
+      <div class="brand-orb">
+        C
+      </div>
+
       <nav class="side-nav">
-        <button class="side-link active" data-page="overview" onclick="showPage('overview')">Overview</button>
-        <button class="side-link" data-page="users" onclick="showPage('users')">Users</button>
-        <button class="side-link" data-page="inquiries" onclick="showPage('inquiries')">Inquiries</button>
-        <button class="side-link" data-page="files" onclick="showPage('files')">Files</button>
-        <button class="side-link" data-page="messages" onclick="showPage('messages')">Messages</button>
-        <button class="side-link" data-page="database" onclick="showPage('database')">Database</button>
+
+        <button
+          class="side-link active"
+          data-page="overview"
+          onclick="showPage('overview')"
+        >
+          Overview
+        </button>
+
+        <button
+          class="side-link"
+          data-page="users"
+          onclick="showPage('users')"
+        >
+          Users
+        </button>
+
+        <button
+          class="side-link"
+          data-page="inquiries"
+          onclick="showPage('inquiries')"
+        >
+          Inquiries
+        </button>
+
+        <button
+          class="side-link"
+          data-page="files"
+          onclick="showPage('files')"
+        >
+          Files
+        </button>
+
+        <button
+          class="side-link"
+          data-page="messages"
+          onclick="showPage('messages')"
+        >
+          Messages
+        </button>
+
+        <button
+          class="side-link"
+          data-page="database"
+          onclick="showPage('database')"
+        >
+          Database
+        </button>
+
       </nav>
+
     </aside>
 
+
+    <!-- MAIN CONTENT -->
     <main class="main">
-      <section class="page active" id="overviewPage">
+
+
+      <!-- OVERVIEW PAGE -->
+      <section
+        class="page active"
+        id="overviewPage"
+      >
+
         <div class="overview-grid">
+
+
+          <!-- WELCOME -->
           <article class="card welcome-card">
+
             <div>
-              <p class="eyebrow">Admin Portal</p>
-              <h1>Welcome back, Ty</h1>
-              <p class="muted">Everything important is available here.</p>
+              <p class="eyebrow">
+                Admin Portal
+              </p>
+
+              <h1>
+                Welcome back, Ty
+              </h1>
+
+              <p class="muted">
+                Everything important is available here.
+              </p>
             </div>
+
           </article>
 
+
+          <!-- USERS OVERVIEW -->
           <article class="card overview-card users-card">
-            <div class="card-header"><span>Users</span><button class="open-button" onclick="showPage('users')">Open</button></div>
-            <div class="card-body compact-body">
-              <div class="summary-number" id="overviewUserTotal">0</div>
-              <p class="muted small">players, coaches, and advisors</p>
-              <input class="search" id="overviewUserSearch" placeholder="Search users..." oninput="renderOverviewUsers()" />
-              <div class="preview-list" id="overviewUserList"></div>
+
+            <div class="card-header">
+
+              <span>
+                Users
+              </span>
+
+              <button
+                class="open-button"
+                type="button"
+                onclick="showPage('users')"
+              >
+                Open
+              </button>
+
             </div>
+
+            <div class="card-body compact-body">
+
+              <div
+                class="summary-number"
+                id="overviewUserTotal"
+              >
+                0
+              </div>
+
+              <p class="muted small">
+                Players, coaches, and advisors
+              </p>
+
+              <input
+                class="search"
+                id="overviewUserSearch"
+                type="search"
+                placeholder="Search users..."
+                oninput="renderOverviewUsers()"
+              />
+
+              <div
+                class="preview-list"
+                id="overviewUserList"
+              ></div>
+
+            </div>
+
           </article>
 
+
+          <!-- INQUIRIES OVERVIEW -->
           <article class="card overview-card inquiries-card">
-            <div class="card-header"><span>Inquiries</span><button class="open-button" onclick="showPage('inquiries')">Open</button></div>
-            <div class="card-body compact-body">
-              <div class="summary-number" id="overviewInquiryTotal">0</div>
-              <p class="muted small">waiting for review</p>
-              <div class="preview-list" id="overviewInquiryList"></div>
+
+            <div class="card-header">
+
+              <span>
+                Inquiries
+              </span>
+
+              <button
+                class="open-button"
+                type="button"
+                onclick="showPage('inquiries')"
+              >
+                Open
+              </button>
+
             </div>
+
+            <div class="card-body compact-body">
+
+              <div
+                class="summary-number"
+                id="overviewInquiryTotal"
+              >
+                0
+              </div>
+
+              <p class="muted small">
+                Waiting for review
+              </p>
+
+              <div
+                class="preview-list"
+                id="overviewInquiryList"
+              ></div>
+
+            </div>
+
           </article>
 
+
+          <!-- DATABASE OVERVIEW -->
           <article class="card overview-card metrics-card">
-            <div class="card-header"><span>Database</span><button class="open-button" onclick="openDatabase('Users')">Open</button></div>
-            <div class="metrics-grid" id="metricsGrid"></div>
+
+            <div class="card-header">
+
+              <span>
+                Database
+              </span>
+
+              <button
+                class="open-button"
+                type="button"
+                onclick="openDatabase('Users')"
+              >
+                Open
+              </button>
+
+            </div>
+
+            <div
+              class="metrics-grid"
+              id="metricsGrid"
+            ></div>
+
           </article>
 
+
+          <!-- FILES OVERVIEW -->
           <article class="card overview-card files-card">
-            <div class="card-header"><span>Files</span><button class="open-button" onclick="showPage('files')">Open</button></div>
-            <div class="card-body compact-body">
-              <div class="overview-inline-summary"><strong id="overviewFileTotal">0</strong><span class="muted small">assigned files</span></div>
-              <select class="field" id="overviewFileUser"></select>
-              <input class="field" type="file" id="overviewFileInput" />
-              <button class="button full" onclick="uploadOverviewFile()">Upload File</button>
+
+            <div class="card-header">
+
+              <span>
+                Files
+              </span>
+
+              <button
+                class="open-button"
+                type="button"
+                onclick="showPage('files')"
+              >
+                Open
+              </button>
+
             </div>
+
+            <div class="card-body compact-body">
+
+              <div class="overview-inline-summary">
+
+                <strong id="overviewFileTotal">
+                  0
+                </strong>
+
+                <span class="muted small">
+                  Assigned files
+                </span>
+
+              </div>
+
+              <select
+                class="field"
+                id="overviewFileUser"
+              ></select>
+
+              <input
+                class="field"
+                type="file"
+                id="overviewFileInput"
+              />
+
+              <button
+                class="button full"
+                type="button"
+                onclick="uploadOverviewFile()"
+              >
+                Upload File
+              </button>
+
+            </div>
+
           </article>
 
+
+          <!-- MESSAGES OVERVIEW -->
           <article class="card overview-card messages-card">
-            <div class="card-header"><span>Messages</span><button class="open-button" onclick="showPage('messages')">Open</button></div>
-            <div class="card-body compact-body">
-              <div class="overview-inline-summary"><strong id="overviewMessageTotal">0</strong><span class="muted small">sent messages</span></div>
-              <select class="field" id="overviewMessageRecipient"></select>
-              <input class="field" id="overviewMessageText" placeholder="Quick message..." />
-              <button class="button full" onclick="sendOverviewMessage()">Send Message</button>
+
+            <div class="card-header">
+
+              <span>
+                Messages
+              </span>
+
+              <button
+                class="open-button"
+                type="button"
+                onclick="showPage('messages')"
+              >
+                Open
+              </button>
+
             </div>
+
+            <div class="card-body compact-body">
+
+              <div class="overview-inline-summary">
+
+                <strong id="overviewMessageTotal">
+                  0
+                </strong>
+
+                <span class="muted small">
+                  Sent messages
+                </span>
+
+              </div>
+
+              <select
+                class="field"
+                id="overviewMessageRecipient"
+              ></select>
+
+              <input
+                class="field"
+                id="overviewMessageText"
+                type="text"
+                placeholder="Quick message..."
+              />
+
+              <button
+                class="button full"
+                type="button"
+                onclick="sendOverviewMessage()"
+              >
+                Send Message
+              </button>
+
+            </div>
+
           </article>
+
         </div>
+
       </section>
 
-      <section class="page" id="usersPage">
+
+      <!-- USERS PAGE -->
+      <section
+        class="page"
+        id="usersPage"
+      >
+
         <div class="workspace-header">
-          <div><p class="eyebrow">Manage</p><h2>Users</h2></div>
-          <input class="search wide" id="userWorkspaceSearch" placeholder="Search users..." oninput="renderUserWorkspace()" />
+
+          <div>
+            <p class="eyebrow">
+              Manage
+            </p>
+
+            <h2>
+              Users
+            </h2>
+          </div>
+
+          <input
+            class="search wide"
+            id="userWorkspaceSearch"
+            type="search"
+            placeholder="Search users..."
+            oninput="renderUserWorkspace()"
+          />
+
         </div>
+
+
         <div class="two-column-workspace users-workspace">
+
+
+          <!-- USER LIST -->
           <article class="card">
-            <div class="card-header"><span>All Users</span><span class="pill" id="userWorkspaceCount">0 users</span></div>
-            <div class="workspace-list inside-card" id="userWorkspaceList"></div>
+
+            <div class="card-header">
+
+              <span>
+                All Users
+              </span>
+
+              <span
+                class="pill"
+                id="userWorkspaceCount"
+              >
+                0 users
+              </span>
+
+            </div>
+
+            <div
+              class="workspace-list inside-card"
+              id="userWorkspaceList"
+            ></div>
+
           </article>
+
+
+          <!-- USER FORM -->
           <article class="card">
-            <div class="card-header"><span id="userFormTitle">Add User</span><button class="text-button" onclick="resetUserForm()">Clear</button></div>
-            <form class="admin-form" id="userForm" onsubmit="saveUser(event)">
-              <input type="hidden" id="userId" />
-              <div class="form-row"><input id="firstName" placeholder="First name" required /><input id="lastName" placeholder="Last name" required /></div>
-              <div class="form-row"><input id="email" type="email" placeholder="Email" required /><input id="phone" placeholder="Phone number" /></div>
-              <div class="form-row"><select id="type"><option>Player</option><option>Coach</option><option>Advisor</option></select><input id="birthYear" placeholder="Birth year" /></div>
-              <div class="form-row"><input id="position" placeholder="Position" /><input id="eliteProspects" placeholder="Stats or Elite Prospects URL" /></div>
-              <button class="button full">Save User</button>
-              <button class="button secondary full hidden" id="deleteUserButton" type="button" onclick="deleteSelectedUser()">Delete User</button>
+
+            <div class="card-header">
+
+              <span id="userFormTitle">
+                Add User
+              </span>
+
+              <button
+                class="button secondary"
+                type="button"
+                onclick="resetUserForm()"
+              >
+                New User
+              </button>
+
+            </div>
+
+
+            <form
+              class="admin-form"
+              id="userForm"
+              onsubmit="saveUser(event)"
+            >
+
+              <input
+                type="hidden"
+                id="userId"
+              />
+
+
+              <div class="form-row">
+
+                <div class="form-group">
+
+                  <label
+                    class="field-label"
+                    for="firstName"
+                  >
+                    First Name
+                  </label>
+
+                  <input
+                    id="firstName"
+                    type="text"
+                    placeholder="First Name"
+                    required
+                  />
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label
+                    class="field-label"
+                    for="lastName"
+                  >
+                    Last Name
+                  </label>
+
+                  <input
+                    id="lastName"
+                    type="text"
+                    placeholder="Last Name"
+                    required
+                  />
+
+                </div>
+
+              </div>
+
+
+              <div class="form-row">
+
+                <div class="form-group">
+
+                  <label
+                    class="field-label"
+                    for="email"
+                  >
+                    Email
+                  </label>
+
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="Email"
+                    required
+                  />
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label
+                    class="field-label"
+                    for="phone"
+                  >
+                    Phone Number
+                  </label>
+
+                  <input
+                    id="phone"
+                    type="tel"
+                    placeholder="Phone Number"
+                  />
+
+                </div>
+
+              </div>
+
+
+              <div class="form-row">
+
+                <div class="form-group">
+
+                  <label
+                    class="field-label"
+                    for="type"
+                  >
+                    User Type
+                  </label>
+
+                  <select
+                    id="type"
+                    required
+                  >
+                    <option value="Player">
+                      Player
+                    </option>
+
+                    <option value="Coach">
+                      Coach
+                    </option>
+
+                    <option value="Advisor">
+                      Advisor
+                    </option>
+                  </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                  <label
+                    class="field-label"
+                    for="birthYear"
+                  >
+                    Birth Year
+                  </label>
+
+                  <input
+                    id="birthYear"
+                    type="text"
+                    placeholder="Birth Year"
+                  />
+
+                </div>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="position"
+                >
+                  Position
+                </label>
+
+                <select id="position">
+
+                  <option value="">
+                    Select Position
+                  </option>
+
+                  <option value="Forward">
+                    Forward
+                  </option>
+
+                  <option value="Defense">
+                    Defense
+                  </option>
+
+                  <option value="Goalie">
+                    Goalie
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="eliteProspects"
+                >
+                  Elite Prospects / Stats
+                </label>
+
+                <textarea
+                  id="eliteProspects"
+                  placeholder="Elite Prospects URL, stats, or notes..."
+                ></textarea>
+
+              </div>
+
+
+              <div class="form-actions">
+
+                <button
+                  class="button full"
+                  type="submit"
+                >
+                  Save User
+                </button>
+
+                <button
+                  class="button danger hidden"
+                  id="deleteUserButton"
+                  type="button"
+                  onclick="deleteSelectedUser()"
+                >
+                  Delete User
+                </button>
+
+              </div>
+
             </form>
+
           </article>
+
         </div>
+
       </section>
 
-      <section class="page" id="inquiriesPage">
+
+      <!-- INQUIRIES PAGE -->
+      <section
+        class="page"
+        id="inquiriesPage"
+      >
+
         <div class="workspace-header">
-          <div><p class="eyebrow">Review</p><h2>Inquiries</h2></div>
-          <input class="search wide" id="inquirySearch" placeholder="Search inquiries..." oninput="renderInquiryWorkspace()" />
+
+          <div>
+            <p class="eyebrow">
+              Review
+            </p>
+
+            <h2>
+              Inquiries
+            </h2>
+          </div>
+
+          <input
+            class="search wide"
+            id="inquirySearch"
+            type="search"
+            placeholder="Search inquiries..."
+            oninput="renderInquiryWorkspace()"
+          />
+
         </div>
-        <div class="workspace-list cards-list" id="inquiryWorkspaceList"></div>
+
+        <div
+          class="workspace-list cards-list"
+          id="inquiryWorkspaceList"
+        ></div>
+
       </section>
 
-      <section class="page" id="filesPage">
-        <div class="workspace-header"><div><p class="eyebrow">Library</p><h2>Files</h2></div></div>
-        <div class="two-column-workspace">
-          <article class="card">
-            <div class="card-header"><span>Upload File</span></div>
-            <form class="admin-form" onsubmit="uploadWorkspaceFile(event)">
-              <select id="fileWorkspaceUser"></select>
-              <input type="file" id="fileWorkspaceInput" required />
-              <textarea id="fileNote" placeholder="Optional note..."></textarea>
-              <button class="button full">Upload And Assign</button>
-            </form>
-          </article>
-          <article class="card">
-            <div class="card-header"><span>All Files</span><span class="pill" id="fileCountPill">0 files</span></div>
-            <div class="workspace-list inside-card" id="fileList"></div>
-          </article>
+
+      <!-- FILES PAGE -->
+      <section
+        class="page"
+        id="filesPage"
+      >
+
+        <div class="workspace-header">
+
+          <div>
+            <p class="eyebrow">
+              Library
+            </p>
+
+            <h2>
+              Files
+            </h2>
+          </div>
+
         </div>
+
+
+        <div class="two-column-workspace">
+
+
+          <!-- FILE UPLOAD -->
+          <article class="card">
+
+            <div class="card-header">
+              <span>
+                Upload File
+              </span>
+            </div>
+
+            <form
+              class="admin-form"
+              onsubmit="uploadWorkspaceFile(event)"
+            >
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="fileWorkspaceUser"
+                >
+                  Assign To
+                </label>
+
+                <select
+                  id="fileWorkspaceUser"
+                  required
+                ></select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="fileWorkspaceInput"
+                >
+                  Choose File
+                </label>
+
+                <input
+                  type="file"
+                  id="fileWorkspaceInput"
+                  required
+                />
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="fileNote"
+                >
+                  File Note
+                </label>
+
+                <textarea
+                  id="fileNote"
+                  placeholder="Optional note..."
+                ></textarea>
+
+              </div>
+
+
+              <button
+                class="button full"
+                type="submit"
+              >
+                Upload And Assign
+              </button>
+
+            </form>
+
+          </article>
+
+
+          <!-- FILE LIST -->
+          <article class="card">
+
+            <div class="card-header">
+
+              <span>
+                All Files
+              </span>
+
+              <span
+                class="pill"
+                id="fileCountPill"
+              >
+                0 files
+              </span>
+
+            </div>
+
+            <div
+              class="workspace-list inside-card"
+              id="fileList"
+            ></div>
+
+          </article>
+
+        </div>
+
       </section>
 
-      <section class="page" id="messagesPage">
-        <div class="workspace-header"><div><p class="eyebrow">Communication</p><h2>Messages</h2></div></div>
-        <div class="two-column-workspace">
-          <article class="card">
-            <div class="card-header"><span>Send Message</span></div>
-            <form class="admin-form" onsubmit="sendWorkspaceMessage(event)">
-              <select id="messageRecipient"></select>
-              <select id="messageType"><option>Admin Notice</option><option>Advisor Message</option><option>Video Coach Message</option><option>File Update</option></select>
-              <textarea id="messageText" placeholder="Write message..." required></textarea>
-              <button class="button full">Send Message</button>
-            </form>
-          </article>
-          <article class="card">
-            <div class="card-header"><span>Message Log</span><span class="pill" id="messageCountPill">0 messages</span></div>
-            <div class="workspace-list inside-card" id="messageWorkspaceList"></div>
-          </article>
+
+      <!-- MESSAGES PAGE -->
+      <section
+        class="page"
+        id="messagesPage"
+      >
+
+        <div class="workspace-header">
+
+          <div>
+            <p class="eyebrow">
+              Communication
+            </p>
+
+            <h2>
+              Messages
+            </h2>
+          </div>
+
         </div>
+
+
+        <div class="two-column-workspace">
+
+
+          <!-- SEND MESSAGE -->
+          <article class="card">
+
+            <div class="card-header">
+              <span>
+                Send Message
+              </span>
+            </div>
+
+            <form
+              class="admin-form"
+              onsubmit="sendWorkspaceMessage(event)"
+            >
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="messageRecipient"
+                >
+                  Recipient
+                </label>
+
+                <select
+                  id="messageRecipient"
+                  required
+                ></select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="messageType"
+                >
+                  Message Type
+                </label>
+
+                <select id="messageType">
+
+                  <option value="Admin Notice">
+                    Admin Notice
+                  </option>
+
+                  <option value="Advisor Message">
+                    Advisor Message
+                  </option>
+
+                  <option value="Video Coach Message">
+                    Video Coach Message
+                  </option>
+
+                  <option value="File Update">
+                    File Update
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="messageText"
+                >
+                  Message
+                </label>
+
+                <textarea
+                  id="messageText"
+                  placeholder="Write message..."
+                  required
+                ></textarea>
+
+              </div>
+
+
+              <button
+                class="button full"
+                type="submit"
+              >
+                Send Message
+              </button>
+
+            </form>
+
+          </article>
+
+
+          <!-- MESSAGE LOG -->
+          <article class="card">
+
+            <div class="card-header">
+
+              <span>
+                Message Log
+              </span>
+
+              <span
+                class="pill"
+                id="messageCountPill"
+              >
+                0 messages
+              </span>
+
+            </div>
+
+            <div
+              class="workspace-list inside-card"
+              id="messageWorkspaceList"
+            ></div>
+
+          </article>
+
+        </div>
+
       </section>
-      <section class="page" id="databasePage">
+
+
+      <!-- DATABASE PAGE -->
+      <section
+        class="page"
+        id="databasePage"
+      >
+
         <div class="workspace-header database-header">
-          <div><p class="eyebrow">Records</p><h2>Database</h2></div>
-          <p class="muted" id="databaseSubtitle">Select a category to view its records.</p>
+
+          <div>
+            <p class="eyebrow">
+              Records
+            </p>
+
+            <h2>
+              Database
+            </h2>
+          </div>
+
+          <p
+            class="muted"
+            id="databaseSubtitle"
+          >
+            Select a category to view its records.
+          </p>
+
         </div>
+
+
         <div class="database-layout">
+
+
+          <!-- DATABASE COLLECTIONS -->
           <article class="card database-metrics-card">
-            <div class="card-header"><span>Collections</span></div>
-            <div class="database-metric-list" id="databaseMetricList"></div>
+
+            <div class="card-header">
+              <span>
+                Collections
+              </span>
+            </div>
+
+            <div
+              class="database-metric-list"
+              id="databaseMetricList"
+            ></div>
+
           </article>
+
+
+          <!-- DATABASE RESULTS -->
           <article class="card database-results-card">
-            <div class="card-header"><span id="databaseResultTitle">All Users</span><span class="pill" id="databaseResultCount">0 records</span></div>
-            <div class="workspace-list inside-card database-results" id="databaseResults"></div>
+
+            <div class="card-header">
+
+              <span id="databaseResultTitle">
+                All Users
+              </span>
+
+              <span
+                class="pill"
+                id="databaseResultCount"
+              >
+                0 records
+              </span>
+
+            </div>
+
+            <div
+              class="workspace-list inside-card database-results"
+              id="databaseResults"
+            ></div>
+
           </article>
+
         </div>
+
       </section>
+
     </main>
+
   </div>
 </body>
 </html>
