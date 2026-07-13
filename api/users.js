@@ -83,7 +83,7 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    res.setHeader("Allow", ["GET", "POST", "PATCH"]);
+    res.setHeader("Allow", ["GET", "POST", "PATCH", "DELETE"]);
 
     if (req.method === "PATCH") {
   const {
@@ -142,6 +142,37 @@ module.exports = async function handler(req, res) {
   return res.status(200).json({
     success: true,
     user: result
+  });
+}
+
+if (req.method === "DELETE") {
+  const { id } = req.body || {};
+
+  if (!id) {
+    return res.status(400).json({
+      error: "User ID is required."
+    });
+  }
+
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).json({
+      error: "Invalid user ID."
+    });
+  }
+
+  const result = await users.deleteOne({
+    _id: new ObjectId(id)
+  });
+
+  if (result.deletedCount === 0) {
+    return res.status(404).json({
+      error: "User not found."
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "User deleted successfully."
   });
 }
 
