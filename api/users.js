@@ -1,3 +1,4 @@
+const { ObjectId } = require("mongodb");
 const { getDb } = require("./db");
 
 module.exports = async function handler(req, res) {
@@ -82,7 +83,67 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    res.setHeader("Allow", ["GET", "POST"]);
+    res.setHeader("Allow", ["GET", "POST", "PATCH"]);
+
+    if (req.method === "PATCH") {
+  const {
+    id,
+    firstName,
+    lastName,
+    type,
+    birthYear,
+    position,
+    email,
+    phone
+  } = req.body || {};
+
+  if (!id) {
+    return res.status(400).json({
+      error: "User ID is required."
+    });
+  }
+
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).json({
+      error: "Invalid user ID."
+    });
+  }
+
+  const updates = {
+    updatedAt: new Date()
+  };
+
+  if (firstName !== undefined) updates.firstName = firstName.trim();
+  if (lastName !== undefined) updates.lastName = lastName.trim();
+  if (type !== undefined) updates.type = type;
+  if (birthYear !== undefined) updates.birthYear = birthYear;
+  if (position !== undefined) updates.position = position;
+  if (email !== undefined) updates.email = email.toLowerCase().trim();
+  if (phone !== undefined) updates.phone = phone;
+
+  const result = await users.findOneAndUpdate(
+    {
+      _id: new ObjectId(id)
+    },
+    {
+      $set: updates
+    },
+    {
+      returnDocument: "after"
+    }
+  );
+
+  if (!result) {
+    return res.status(404).json({
+      error: "User not found."
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    user: result
+  });
+}
 
     return res.status(405).json({
       error: `Method ${req.method} is not allowed.`

@@ -1,9 +1,13 @@
-const users = [
-  { id: "u1", type: "Player", firstName: "Owen", lastName: "Schwarz", birthYear: "2009", email: "owen@collective.com", phone: "(203) 555-0141", position: "Defense", eliteProspects: "34 GP · 6 G · 15 A · 21 PTS", files: ["Development Plan.pdf", "Video Review 01.mp4"] },
-  { id: "u2", type: "Player", firstName: "Ryan", lastName: "Carter", birthYear: "2008", email: "ryan@collective.com", phone: "(203) 555-0174", position: "Forward", eliteProspects: "41 GP · 18 G · 22 A · 40 PTS", files: ["Recruiting Notes.pdf"] },
-  { id: "u3", type: "Coach", firstName: "Mike", lastName: "Walsh", birthYear: "", email: "mike@collective.com", phone: "(203) 555-0188", position: "", eliteProspects: "", files: ["Camp Roster.xlsx"] },
-  { id: "u4", type: "Advisor", firstName: "Ty", lastName: "Admin", birthYear: "", email: "ty@collective.com", phone: "(203) 555-0199", position: "", eliteProspects: "", files: ["Player Notes.pdf"] }
-];
+let users = [];
+
+async function loadUsers() {
+    const response = await fetch("/api/users");
+    users = await response.json();
+
+    renderEverything();
+}
+
+loadUsers();
 
 const inquiries = [
   { id: "i1", firstName: "Evan", lastName: "Brooks", role: "player", position: "Forward", birthYear: "2010", email: "evan@example.com", phoneNumber: "(203) 555-0160", goals: "Looking for development help before next season." },
