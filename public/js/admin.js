@@ -1,10 +1,42 @@
 let users = [];
+let selectedUserId = null;
 
 async function loadUsers() {
+  try {
     const response = await fetch("/api/users");
-    users = await response.json();
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to load users.");
+    }
+
+    users = data.map(function(user) {
+      return {
+        ...user,
+        id: String(user._id),
+        type: user.type || "Player",
+        birthYear: user.birthYear || "",
+        position: user.position || "",
+        eliteProspects: user.eliteProspects || "",
+        phone: user.phone || "",
+        files: Array.isArray(user.files) ? user.files : []
+      };
+    });
+
+    if (
+      !selectedUserId ||
+      !users.some(function(user) {
+        return user.id === selectedUserId;
+      })
+    ) {
+      selectedUserId = null;
+    }
 
     renderEverything();
+  } catch (error) {
+    console.error("Load users error:", error);
+    alert(error.message);
+  }
 }
 
 loadUsers();
@@ -90,19 +122,34 @@ function openUser(id) { selectUser(id); showPage("users"); }
 
 function selectUser(id) {
   selectedUserId = id;
-  const user = users.find(item => item.id === id);
-  if (!user) return;
-  document.getElementById("userFormTitle").textContent = `Update ${fullName(user)}`;
+
+  const user = users.find(function(item) {
+    return item.id === id;
+  });
+
+  if (!user) {
+    console.error("User not found:", id);
+    return;
+  }
+
+  document.getElementById("userFormTitle").textContent =
+    `Update ${fullName(user)}`;
+
   document.getElementById("userId").value = user.id;
-  document.getElementById("firstName").value = user.firstName;
-  document.getElementById("lastName").value = user.lastName;
-  document.getElementById("email").value = user.email;
-  document.getElementById("phone").value = user.phone;
-  document.getElementById("type").value = user.type;
-  document.getElementById("birthYear").value = user.birthYear;
-  document.getElementById("position").value = user.position;
-  document.getElementById("eliteProspects").value = user.eliteProspects;
-  document.getElementById("deleteUserButton").classList.remove("hidden");
+  document.getElementById("firstName").value = user.firstName || "";
+  document.getElementById("lastName").value = user.lastName || "";
+  document.getElementById("email").value = user.email || "";
+  document.getElementById("phone").value = user.phone || "";
+  document.getElementById("type").value = user.type || "Player";
+  document.getElementById("birthYear").value = user.birthYear || "";
+  document.getElementById("position").value = user.position || "";
+  document.getElementById("eliteProspects").value =
+    user.eliteProspects || "";
+
+  document
+    .getElementById("deleteUserButton")
+    .classList.remove("hidden");
+
   renderUserWorkspace();
 }
 
