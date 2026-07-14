@@ -1,9 +1,9 @@
 const { ObjectId } = require("mongodb");
-const connectToDatabase = require("./db");
+const { getDb } = require("./db");
 
 module.exports = async function handler(req, res) {
   try {
-    const db = await connectToDatabase();
+    const db = await getDb();
     const playerId = req.query.id;
 
     if (!playerId) {

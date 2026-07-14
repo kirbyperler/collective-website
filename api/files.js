@@ -4,26 +4,31 @@ const { getDb } = require("./db");
 module.exports = async function handler(req, res) {
   try {
     const db = await getDb();
-    const messagesCollection = db.collection("messages");
+    const filesCollection = db.collection("files");
     const usersCollection = db.collection("users");
 
-    // GET /api/messages
+    // GET /api/files
     if (req.method === "GET") {
-      const messages = await messagesCollection
+      const files = await filesCollection
         .find({})
         .sort({ createdAt: -1 })
         .toArray();
 
-      return res.status(200).json(messages);
+      return res.status(200).json(files);
     }
 
-    // POST /api/messages
+    // POST /api/files
     if (req.method === "POST") {
-      const { userId, type, text } = req.body || {};
+      const {
+        userId,
+        fileName,
+        fileUrl,
+        category
+      } = req.body || {};
 
-      if (!userId || !type || !text) {
+      if (!userId || !fileName || !fileUrl) {
         return res.status(400).json({
-          error: "User, message type, and message text are required."
+          error: "User ID, file name, and file URL are required."
         });
       }
 
@@ -43,53 +48,54 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      const newMessage = {
+      const newFile = {
         userId: new ObjectId(userId),
-        to: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
-        type: type.trim(),
-        text: text.trim(),
+        assignedTo: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+        fileName: fileName.trim(),
+        fileUrl: fileUrl.trim(),
+        category: category ? category.trim() : "General",
         createdAt: new Date()
       };
 
-      const result = await messagesCollection.insertOne(newMessage);
+      const result = await filesCollection.insertOne(newFile);
 
       return res.status(201).json({
-        message: "Message created successfully.",
-        savedMessage: {
-          ...newMessage,
+        message: "File saved successfully.",
+        file: {
+          ...newFile,
           _id: result.insertedId
         }
       });
     }
 
-    // DELETE /api/messages
+    // DELETE /api/files
     if (req.method === "DELETE") {
       const { id } = req.body || {};
 
       if (!id) {
         return res.status(400).json({
-          error: "Message ID is required."
+          error: "File ID is required."
         });
       }
 
       if (!ObjectId.isValid(id)) {
         return res.status(400).json({
-          error: "Invalid message ID."
+          error: "Invalid file ID."
         });
       }
 
-      const result = await messagesCollection.deleteOne({
+      const result = await filesCollection.deleteOne({
         _id: new ObjectId(id)
       });
 
       if (result.deletedCount === 0) {
         return res.status(404).json({
-          error: "Message not found."
+          error: "File not found."
         });
       }
 
       return res.status(200).json({
-        message: "Message deleted successfully."
+        message: "File deleted successfully."
       });
     }
 
@@ -99,7 +105,7 @@ module.exports = async function handler(req, res) {
       error: `Method ${req.method} not allowed.`
     });
   } catch (error) {
-    console.error("Messages API error:", error);
+    console.error("Files API error:", error);
 
     return res.status(500).json({
       error: "Internal server error."
