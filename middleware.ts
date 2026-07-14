@@ -130,6 +130,11 @@ function requiredRole(pathname: string) {
     if (
         pathname === "/admin" ||
         pathname === "/admin.html" ||
+        pathname === "/api/users" ||
+        pathname === "/api/inquiries" ||
+        pathname === "/api/messages" ||
+        pathname === "/api/files" ||
+        pathname === "/api/accept-inquiry" ||
         pathname.startsWith("/api/admin/")
     ) {
         return "Admin";
@@ -225,6 +230,11 @@ export const config = {
         "/coach.html",
         "/advisor",
         "/advisor.html",
+        "/api/users",
+        "/api/inquiries",
+        "/api/messages",
+        "/api/files",
+        "/api/accept-inquiry",
         "/api/admin/:path*"
     ]
 };

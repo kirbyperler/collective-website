@@ -3,7 +3,10 @@ let selectedUserId = null;
 
 async function loadUsers() {
   try {
-    const response = await fetch("/api/users");
+    const response = await fetch("/api/users", {
+      method: "GET",
+      credentials: "same-origin"
+    });
     const data = await response.json();
 
     if (!response.ok) {
@@ -239,6 +242,7 @@ async function saveUser(event) {
 
     const response = await fetch("/api/users", {
       method,
+      credentials: "same-origin",
       headers: {
         "Content-Type": "application/json"
       },
@@ -296,6 +300,7 @@ async function deleteSelectedUser() {
   try {
     const response = await fetch("/api/users", {
       method: "DELETE",
+      credentials: "same-origin",
       headers: {
         "Content-Type": "application/json"
       },
