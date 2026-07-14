@@ -99,7 +99,9 @@ async function getSession(
                 "HMAC",
                 key,
                 decodeBase64Url(encodedSignature),
-                new TextEncoder().encode(encodedPayload)
+                new TextEncoder()
+                    .encode(encodedPayload)
+                    .buffer as ArrayBuffer
             );
 
         if (!signatureIsValid) {
@@ -168,6 +170,16 @@ export default async function middleware(
     request: Request
 ) {
     const url = new URL(request.url);
+
+    // Public visitors may submit an inquiry.
+    // GET and DELETE requests still require an Admin session.
+    if (
+        url.pathname === "/api/inquiries" &&
+        request.method === "POST"
+    ) {
+        return next();
+    }
+
     const session = await getSession(request);
     const roleNeeded = requiredRole(url.pathname);
 
@@ -184,7 +196,7 @@ export default async function middleware(
         }
 
         return Response.redirect(
-            new URL("/login.html", request.url),
+            new URL("/login", request.url),
             302
         );
     }
@@ -224,17 +236,22 @@ export const config = {
     matcher: [
         "/admin",
         "/admin.html",
+
         "/player",
         "/player.html",
+
         "/coach",
         "/coach.html",
+
         "/advisor",
         "/advisor.html",
+
         "/api/users",
         "/api/inquiries",
         "/api/messages",
         "/api/files",
         "/api/accept-inquiry",
+
         "/api/admin/:path*"
     ]
 };
