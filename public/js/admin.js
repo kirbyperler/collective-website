@@ -636,6 +636,28 @@ function renderEverything() {
   renderDatabase();
 }
 
+async function logout() {
+    try {
+        const response = await fetch("/api/logout", {
+            method: "POST",
+            credentials: "same-origin"
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.message || "Unable to log out."
+            );
+        }
+
+        window.location.replace("/login");
+    } catch (error) {
+        console.error("Logout error:", error);
+        alert(error.message);
+    }
+}
+
 loadUsers();
 loadInquiries();
 loadMessages();
