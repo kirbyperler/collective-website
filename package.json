@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/kirbyperler/collective-website#readme",
   "dependencies": {
+    "@vercel/functions": "^3.7.5",
     "mongodb": "^7.4.0"
   }
 }
