@@ -39,16 +39,56 @@ async function loadUsers() {
   }
 }
 
-const inquiries = [
-  { id: "i1", firstName: "Evan", lastName: "Brooks", role: "player", position: "Forward", birthYear: "2010", email: "evan@example.com", phoneNumber: "(203) 555-0160", goals: "Looking for development help before next season." },
-  { id: "i2", firstName: "Cole", lastName: "Anderson", role: "player", position: "Defense", birthYear: "2009", email: "cole@example.com", phoneNumber: "(203) 555-0181", goals: "Interested in video review and recruiting guidance." },
-  { id: "i3", firstName: "Matt", lastName: "Harris", role: "coach", position: "", birthYear: "", email: "matt@example.com", phoneNumber: "(203) 555-0109", goals: "Wants to discuss camp partnership opportunities." }
-];
+let inquiries = [];
 
-let messages = [
-  { id: "m1", userId: "u1", to: "Owen Schwarz", type: "Advisor Message", text: "Great session today. Focus on your gap control.", time: "2h ago" },
-  { id: "m2", userId: "u2", to: "Ryan Carter", type: "Admin Notice", text: "Your new video review has been added.", time: "1d ago" }
-];
+async function loadInquiries() {
+  try {
+    const response = await fetch("/api/inquiries");
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to load inquiries.");
+    }
+
+    inquiries = data.map(function(inquiry) {
+      return {
+        ...inquiry,
+        id: String(inquiry._id)
+      };
+    });
+
+    renderEverything();
+  } catch (error) {
+    console.error("Load inquiries error:", error);
+    alert(error.message);
+  }
+}
+
+let messages = [];
+
+async function loadMessages() {
+  try {
+    const response = await fetch("/api/messages");
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to load messages.");
+    }
+
+    messages = data.map(function(message) {
+      return {
+        ...message,
+        id: String(message._id),
+        userId: String(message.userId),
+        time: new Date(message.createdAt).toLocaleString()
+      };
+    });
+
+    renderEverything();
+  } catch (error) {
+    console.error("Load messages error:", error);
+  }
+}
 
 let activeDatabaseFilter = "Users";
 
@@ -294,21 +334,95 @@ function renderInquiryWorkspace() {
     </article>`).join("") || `<p class="muted">No inquiries found.</p>`;
 }
 
-function acceptInquiry(id) {
-  const inquiry = inquiries.find(item => item.id === id);
-  if (!inquiry || !confirm("Accept this inquiry and create a user?")) return;
-  const user = { id: makeId("u"), type: inquiry.role[0].toUpperCase() + inquiry.role.slice(1), firstName: inquiry.firstName, lastName: inquiry.lastName, birthYear: inquiry.birthYear, email: inquiry.email, phone: inquiry.phoneNumber, position: inquiry.position, eliteProspects: "", files: [] };
-  users.unshift(user);
-  inquiries.splice(inquiries.findIndex(item => item.id === id), 1);
-  selectedUserId = user.id;
-  renderEverything();
+async function acceptInquiry(id) {
+  const inquiry = inquiries.find(function(item) {
+    return item.id === id;
+  });
+
+  if (!inquiry) {
+    alert("Inquiry not found.");
+    return;
+  }
+
+  const confirmed = confirm(
+    `Accept ${inquiry.firstName} ${inquiry.lastName} and create a user?`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/accept-inquiry", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        inquiryId: id
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to accept inquiry.");
+    }
+
+    await Promise.all([
+      loadUsers(),
+      loadInquiries()
+    ]);
+
+    alert("Inquiry accepted and user created.");
+  } catch (error) {
+    console.error("Accept inquiry error:", error);
+    alert(error.message);
+  }
 }
 
-function deleteInquiry(id) {
-  const index = inquiries.findIndex(item => item.id === id);
-  if (index < 0 || !confirm("Delete this inquiry?")) return;
-  inquiries.splice(index, 1);
-  renderEverything();
+async function deleteInquiry(id) {
+  const inquiry = inquiries.find(function(item) {
+    return item.id === id;
+  });
+
+  if (!inquiry) {
+    alert("Inquiry not found.");
+    return;
+  }
+
+  const confirmed = confirm(
+    `Delete the inquiry from ${inquiry.firstName} ${inquiry.lastName}?`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/inquiries", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        id
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to delete inquiry.");
+    }
+
+    await loadInquiries();
+
+    alert("Inquiry deleted successfully.");
+  } catch (error) {
+    console.error("Delete inquiry error:", error);
+    alert(error.message);
+  }
 }
 
 function fillSelects() {
@@ -356,28 +470,68 @@ function removeFile(userId, fileName) {
   renderEverything();
 }
 
-function addMessage(userId, type, text) {
-  const user = users.find(item => item.id === userId);
-  if (!user || !text.trim()) return false;
-  messages.unshift({ id: makeId("m"), userId, to: fullName(user), type, text: text.trim(), time: "Just now" });
-  renderEverything();
-  return true;
+async function addMessage(userId, type, text) {
+  if (!userId || !text.trim()) {
+    return false;
+  }
+
+  try {
+    const response = await fetch("/api/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        userId,
+        type,
+        text: text.trim()
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to send message.");
+    }
+
+    await loadMessages();
+
+    return true;
+  } catch (error) {
+    console.error("Send message error:", error);
+    alert(error.message);
+    return false;
+  }
 }
 
-function sendOverviewMessage() {
+async function sendOverviewMessage() {
   const input = document.getElementById("overviewMessageText");
-  if (addMessage(document.getElementById("overviewMessageRecipient").value, "Admin Notice", input.value)) input.value = "";
+
+  const sent = await addMessage(
+    document.getElementById("overviewMessageRecipient").value,
+    "Admin Notice",
+    input.value
+  );
+
+  if (sent) {
+    input.value = "";
+  }
 }
 
-function sendWorkspaceMessage(event) {
+async function sendWorkspaceMessage(event) {
   event.preventDefault();
-  const input = document.getElementById("messageText");
-  if (addMessage(document.getElementById("messageRecipient").value, document.getElementById("messageType").value, input.value)) event.target.reset();
-}
 
-function renderMessages() {
-  document.getElementById("messageCountPill").textContent = `${messages.length} messages`;
-  document.getElementById("messageWorkspaceList").innerHTML = messages.map(message => `<div class="message-item"><strong>${message.to}</strong><p class="muted small">${message.type} · ${message.time}</p><p class="muted small">${message.text}</p></div>`).join("") || `<p class="muted small">No messages yet.</p>`;
+  const input = document.getElementById("messageText");
+
+  const sent = await addMessage(
+    document.getElementById("messageRecipient").value,
+    document.getElementById("messageType").value,
+    input.value
+  );
+
+  if (sent) {
+    event.target.reset();
+  }
 }
 
 
@@ -456,3 +610,5 @@ function renderEverything() {
 }
 
 loadUsers();
+loadInquiries();
+loadMessages();
