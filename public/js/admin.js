@@ -597,6 +597,33 @@ function renderDatabase() {
   if (!records.length) results.innerHTML = `<p class="muted small">No records found.</p>`;
 }
 
+function renderMessages() {
+  const countPill = document.getElementById("messageCountPill");
+  const messageList = document.getElementById("messageWorkspaceList");
+
+  if (!countPill || !messageList) {
+    return;
+  }
+
+  countPill.textContent = `${messages.length} messages`;
+
+  messageList.innerHTML = messages.map(function(message) {
+    return `
+      <div class="message-item">
+        <strong>${message.to || "Unknown user"}</strong>
+
+        <p class="muted small">
+          ${message.type || "Message"} · ${message.time || ""}
+        </p>
+
+        <p class="muted small">
+          ${message.text || ""}
+        </p>
+      </div>
+    `;
+  }).join("") || `<p class="muted small">No messages yet.</p>`;
+}
+
 function renderEverything() {
   renderOverviewUsers();
   renderOverviewInquiries();
