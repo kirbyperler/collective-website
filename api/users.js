@@ -87,47 +87,38 @@ module.exports = async function handler(req, res) {
 
     res.setHeader("Allow", ["GET", "POST", "PATCH", "DELETE"]);
 
-    if (req.method === "PATCH") {
+if (req.method === "PATCH") {
   const {
     id,
     firstName,
     lastName,
+    email,
+    phone,
     type,
     birthYear,
     position,
-    email,
-    phone
+    eliteProspects
   } = req.body || {};
 
-  if (!id) {
+  if (!id || !ObjectId.isValid(id)) {
     return res.status(400).json({
-      error: "User ID is required."
+      error: "A valid user ID is required."
     });
-  }
-
-  if (!ObjectId.isValid(id)) {
-    return res.status(400).json({
-      error: "Invalid user ID."
-    });
-  }
-
-  if (eliteProspects !== undefined) {
-  updates.eliteProspects = eliteProspects;
   }
 
   const updates = {
+    firstName: String(firstName || "").trim(),
+    lastName: String(lastName || "").trim(),
+    email: String(email || "").trim().toLowerCase(),
+    phone: String(phone || "").trim(),
+    type: String(type || "").trim(),
+    birthYear: String(birthYear || "").trim(),
+    position: String(position || "").trim(),
+    eliteProspects: String(eliteProspects || "").trim(),
     updatedAt: new Date()
   };
 
-  if (firstName !== undefined) updates.firstName = firstName.trim();
-  if (lastName !== undefined) updates.lastName = lastName.trim();
-  if (type !== undefined) updates.type = type;
-  if (birthYear !== undefined) updates.birthYear = birthYear;
-  if (position !== undefined) updates.position = position;
-  if (email !== undefined) updates.email = email.toLowerCase().trim();
-  if (phone !== undefined) updates.phone = phone;
-
-  const result = await users.findOneAndUpdate(
+  const result = await db.collection("users").findOneAndUpdate(
     {
       _id: new ObjectId(id)
     },
@@ -146,7 +137,7 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(200).json({
-    success: true,
+    message: "User updated successfully.",
     user: result
   });
 }
