@@ -39,8 +39,6 @@ async function loadUsers() {
   }
 }
 
-loadUsers();
-
 const inquiries = [
   { id: "i1", firstName: "Evan", lastName: "Brooks", role: "player", position: "Forward", birthYear: "2010", email: "evan@example.com", phoneNumber: "(203) 555-0160", goals: "Looking for development help before next season." },
   { id: "i2", firstName: "Cole", lastName: "Anderson", role: "player", position: "Defense", birthYear: "2009", email: "cole@example.com", phoneNumber: "(203) 555-0181", goals: "Interested in video review and recruiting guidance." },
@@ -52,7 +50,6 @@ let messages = [
   { id: "m2", userId: "u2", to: "Ryan Carter", type: "Admin Notice", text: "Your new video review has been added.", time: "1d ago" }
 ];
 
-let selectedUserId = users[0]?.id || null;
 let activeDatabaseFilter = "Users";
 
 function fullName(user) { return `${user.firstName} ${user.lastName}`.trim(); }
