@@ -189,7 +189,8 @@ if (req.method === "DELETE") {
     console.error("Users API error:", error);
 
     return res.status(500).json({
-      error: "Failed to access users."
+      error: "Failed to access users.",
+      details: error.message
     });
   }
 };
