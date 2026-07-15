@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@vercel/blob": "latest",
+    "formidable": "latest",
+    "mongodb": "latest"
+  }
+}

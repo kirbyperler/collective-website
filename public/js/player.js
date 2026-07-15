@@ -15,20 +15,20 @@ let files = [];
 let progressRatings = [];
 let contacts = [];
 
-const fallbackPlayer = {
-  id: "demo-player",
-  firstName: "Owen",
-  lastName: "Schwarz",
-  birthYear: "2009",
-  email: "owen@example.com",
+const emptyPlayer = {
+  id: "",
+  firstName: "",
+  lastName: "",
+  birthYear: "",
+  email: "",
   phone: "",
-  position: "Defense",
-  currentTeam: "Boston Jr. Rangers 16U",
-  shoots: "Left",
-  height: "6'2\"",
-  weight: "185 lbs",
+  position: "",
+  currentTeam: "",
+  shoots: "",
+  height: "",
+  weight: "",
   careerStatus: "Youth",
-  bio: "Two-way defenseman focused on mobility, decision-making, and consistent development.",
+  bio: "",
   avatarUrl: ""
 };
 
@@ -36,23 +36,33 @@ function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]));
 }
 
-async function apiRequest(url, options = {}, fallbackValue = null) {
-  try {
-    const response = await fetch(url, { credentials: "same-origin", ...options });
-    const contentType = response.headers.get("content-type") || "";
-    const data = contentType.includes("application/json") ? await response.json() : await response.text();
-    if (!response.ok) throw new Error(data?.error || data?.message || "Request failed.");
-    return data;
-  } catch (error) {
-    console.warn(`${url} unavailable:`, error.message);
-    return fallbackValue;
+async function apiRequest(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    ...options
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  const data = contentType.includes("application/json")
+    ? await response.json()
+    : await response.text();
+
+  if (response.status === 401) {
+    window.location.replace("/login");
+    throw new Error("Your session has expired.");
   }
+
+  if (!response.ok) {
+    throw new Error(data?.error || data?.message || "Request failed.");
+  }
+
+  return data;
 }
 
 function showPage(pageName) {
   document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
   document.getElementById(`${pageName}Page`)?.classList.add("active");
-  document.querySelectorAll(".side-link, .top-nav-link").forEach(link => link.classList.toggle("active", link.dataset.page === pageName));
+  document.querySelectorAll(".side-link").forEach(link => link.classList.toggle("active", link.dataset.page === pageName));
   document.getElementById("topbarTitle").textContent = pageName[0].toUpperCase() + pageName.slice(1);
   document.getElementById("sidebar").classList.remove("open");
 }
@@ -77,39 +87,35 @@ function allowedRecruitingLevels(status) {
 }
 
 async function loadDashboard() {
-  const [meData, messageData, programData, fileData, progressData, contactData] = await Promise.all([
-    apiRequest(API.me, {}, fallbackPlayer),
-    apiRequest(API.messages, {}, []),
-    apiRequest(API.programs, {}, { interestedInPlayer: [], playerInterested: [] }),
-    apiRequest(API.files, {}, []),
-    apiRequest(API.progress, {}, []),
-    apiRequest(API.contacts, {}, [])
-  ]);
+  try {
+    const [meData, messageData, programData, fileData, progressData, contactData] = await Promise.all([
+      apiRequest(API.me),
+      apiRequest(API.messages),
+      apiRequest(API.programs),
+      apiRequest(API.files),
+      apiRequest(API.progress),
+      apiRequest(API.contacts)
+    ]);
 
-  player = { ...fallbackPlayer, ...(meData?.player || meData || {}) };
-  messages = Array.isArray(messageData) ? messageData : messageData?.messages || [];
-  programs = {
-    interestedInPlayer: programData?.interestedInPlayer || [],
-    playerInterested: programData?.playerInterested || []
-  };
-  files = Array.isArray(fileData) ? fileData : fileData?.files || [];
-  progressRatings = Array.isArray(progressData) ? progressData : progressData?.ratings || [];
-  contacts = Array.isArray(contactData) ? contactData : contactData?.contacts || [];
+    player = { ...emptyPlayer, ...(meData?.player || {}) };
+    messages = messageData?.messages || [];
+    programs = {
+      interestedInPlayer: programData?.interestedInPlayer || [],
+      playerInterested: programData?.playerInterested || []
+    };
+    files = fileData?.files || [];
+    progressRatings = progressData?.ratings || [];
+    contacts = contactData?.contacts || [];
 
-  if (!progressRatings.length) {
-    progressRatings = [
-      { id: "p1", category: "Skating", rating: 82, evaluator: "Development Coach", note: "Strong edge control and improving acceleration.", createdAt: new Date().toISOString() },
-      { id: "p2", category: "Hockey IQ", rating: 88, evaluator: "Advisor", note: "Reads pressure well and moves pucks quickly.", createdAt: new Date().toISOString() },
-      { id: "p3", category: "Strength", rating: 74, evaluator: "Performance Staff", note: "Continue building lower-body power.", createdAt: new Date().toISOString() }
-    ];
+    fillProfileForm();
+    fillContacts();
+    fillRecruitingLevels();
+    renderEverything();
+  } catch (error) {
+    console.error("Dashboard load error:", error);
+    alert(error.message);
   }
-
-  fillProfileForm();
-  fillContacts();
-  fillRecruitingLevels();
-  renderEverything();
 }
-
 function fullName() { return `${player?.firstName || ""} ${player?.lastName || ""}`.trim() || "Player"; }
 
 function fillProfileForm() {
@@ -121,12 +127,10 @@ function fillProfileForm() {
 
 function fillContacts() {
   const select = document.getElementById("messageRecipient");
-  const list = contacts.length ? contacts : [
-    { id: "admin", name: "Collective Admin", role: "Admin" },
-    { id: "advisor", name: "Player Advisor", role: "Advisor" },
-    { id: "coach", name: "Development Coach", role: "Coach" }
-  ];
-  select.innerHTML = list.map(contact => `<option value="${escapeHtml(contact.id || contact._id)}">${escapeHtml(contact.name || `${contact.firstName || ""} ${contact.lastName || ""}`.trim())} · ${escapeHtml(contact.role || contact.type || "Staff")}</option>`).join("");
+  const list = contacts;
+  select.innerHTML = list.length
+    ? list.map(contact => `<option value="${escapeHtml(contact.id || contact._id)}">${escapeHtml(contact.name || `${contact.firstName || ""} ${contact.lastName || ""}`.trim())} · ${escapeHtml(contact.role || contact.type || "Staff")}</option>`).join("")
+    : `<option value="">No staff contacts available</option>`;
 }
 
 function fillRecruitingLevels() {
@@ -138,21 +142,17 @@ function fillRecruitingLevels() {
 }
 
 function setAvatar(url) {
-  ["overviewAvatar", "profileAvatar", "stageAvatar", "topbarAvatar"].forEach(id => {
+  ["overviewAvatar", "profileAvatar"].forEach(id => {
     const image = document.getElementById(id);
     image.src = url || "";
     image.hidden = !url;
   });
   document.getElementById("overviewAvatarPlaceholder").hidden = Boolean(url);
   document.getElementById("profileAvatarPlaceholder").hidden = Boolean(url);
-  const stagePlaceholder = document.getElementById("stageAvatarPlaceholder");
-  if (stagePlaceholder) stagePlaceholder.hidden = Boolean(url);
 }
 
 function renderOverview() {
-  document.getElementById("welcomeName").textContent = fullName();
-  const topbarName = document.getElementById("topbarPlayerName");
-  if (topbarName) topbarName.textContent = fullName();
+  document.getElementById("welcomeName").textContent = `Welcome back, ${player.firstName || "Player"}`;
   document.getElementById("welcomeMeta").textContent = [player.position, player.currentTeam, player.birthYear].filter(Boolean).join(" · ") || "Your development dashboard is ready.";
   document.getElementById("overviewCareerStatus").textContent = player.careerStatus || "Youth";
   document.getElementById("overviewPosition").textContent = player.position || "Player";
@@ -226,7 +226,7 @@ async function saveProfile(event) {
   event.preventDefault();
   const payload = {};
   ["firstName","lastName","birthYear","position","currentTeam","shoots","height","weight","email","phone","careerStatus","bio"].forEach(id => payload[id] = document.getElementById(id).value.trim());
-  const data = await apiRequest(API.me, { method: "PATCH", headers: {"Content-Type":"application/json"}, body: JSON.stringify(payload) }, { player: payload });
+  const data = await apiRequest(API.me, { method: "PATCH", headers: {"Content-Type":"application/json"}, body: JSON.stringify(payload) });
   player = { ...player, ...(data?.player || payload) };
   fillRecruitingLevels();
   renderEverything();
@@ -238,16 +238,16 @@ async function uploadAvatar() {
   const file = input.files[0];
   if (!file) return alert("Choose a photo first.");
   const formData = new FormData();
-  formData.append("avatar", file);
-  const data = await apiRequest(API.avatar, { method: "POST", body: formData }, null);
-  player.avatarUrl = data?.avatarUrl || data?.url || URL.createObjectURL(file);
+  formData.append("file", file);
+  const data = await apiRequest(API.avatar, { method: "POST", body: formData });
+  player.avatarUrl = data?.avatarUrl || data?.url || "";
   input.value = "";
   renderEverything();
 }
 
 async function deleteAvatar() {
   if (!player.avatarUrl || !confirm("Remove your profile photo?")) return;
-  await apiRequest(API.avatar, { method: "DELETE" }, {});
+  await apiRequest(API.avatar, { method: "DELETE" });
   player.avatarUrl = "";
   renderEverything();
 }
@@ -256,8 +256,8 @@ async function addProgram(event, type) {
   event.preventDefault();
   const prefix = type === "interestedInPlayer" ? "interestedInPlayer" : "playerInterested";
   const payload = { type, name: document.getElementById(`${prefix}Name`).value.trim(), level: document.getElementById(`${prefix}Level`).value, contact: document.getElementById(`${prefix}Contact`).value.trim() };
-  const data = await apiRequest(API.programs, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(payload) }, { program: { ...payload, id: `local-${Date.now()}` } });
-  programs[type].unshift(data?.program || { ...payload, id: `local-${Date.now()}` });
+  const data = await apiRequest(API.programs, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+  programs[type].unshift(data.program);
   event.target.reset();
   fillRecruitingLevels();
   renderEverything();
@@ -265,7 +265,7 @@ async function addProgram(event, type) {
 
 async function deleteProgram(type, id) {
   if (!confirm("Delete this program?")) return;
-  await apiRequest(API.programs, { method: "DELETE", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ id, type }) }, {});
+  await apiRequest(API.programs, { method: "DELETE", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ id, type }) });
   programs[type] = programs[type].filter(program => String(program.id || program._id) !== String(id));
   renderEverything();
 }
@@ -274,15 +274,15 @@ async function sendMessage(event) {
   event.preventDefault();
   const recipientSelect = document.getElementById("messageRecipient");
   const payload = { recipientId: recipientSelect.value, toName: recipientSelect.options[recipientSelect.selectedIndex]?.text.split(" · ")[0], subject: document.getElementById("messageSubject").value.trim(), text: document.getElementById("messageText").value.trim() };
-  const data = await apiRequest(API.messages, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(payload) }, { message: { ...payload, id: `local-${Date.now()}`, direction: "sent", createdAt: new Date().toISOString() } });
-  messages.unshift(data?.message || { ...payload, id: `local-${Date.now()}`, direction: "sent", createdAt: new Date().toISOString() });
+  const data = await apiRequest(API.messages, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+  messages.unshift(data.message);
   event.target.reset();
   renderEverything();
 }
 
 async function deleteMessage(id) {
   if (!confirm("Delete this message?")) return;
-  await apiRequest(API.messages, { method: "DELETE", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ id }) }, {});
+  await apiRequest(API.messages, { method: "DELETE", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ id }) });
   messages = messages.filter(message => String(message.id || message._id) !== String(id));
   renderEverything();
 }
@@ -296,22 +296,22 @@ async function uploadFile(event) {
   formData.append("file", file);
   formData.append("category", document.getElementById("fileCategory").value);
   formData.append("note", document.getElementById("fileNote").value.trim());
-  const data = await apiRequest(API.files, { method: "POST", body: formData }, null);
-  files.unshift(data?.file || { id: `local-${Date.now()}`, name: file.name, category: document.getElementById("fileCategory").value, note: document.getElementById("fileNote").value.trim(), mimeType: file.type, url: URL.createObjectURL(file) });
+  const data = await apiRequest(API.files, { method: "POST", body: formData });
+  files.unshift(data.file);
   event.target.reset();
   renderEverything();
 }
 
 async function deleteFile(id) {
   if (!confirm("Delete this file?")) return;
-  await apiRequest(API.files, { method: "DELETE", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ id }) }, {});
+  await apiRequest(API.files, { method: "DELETE", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ id }) });
   files = files.filter(file => String(file.id || file._id) !== String(id));
   renderEverything();
 }
 
 async function logout() {
-  const response = await apiRequest("/api/logout", { method: "POST" }, { success: true });
-  if (response) window.location.replace("/login");
+  await apiRequest("/api/logout", { method: "POST" });
+  window.location.replace("/login");
 }
 
 loadDashboard();
