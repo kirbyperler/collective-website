@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Set Up Account | Collective</title>
+
+  <meta
+    name="description"
+    content="Create your Collective account."
+  >
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
+
+  <link
+    rel="stylesheet"
+    href="/css/setup-account.css"
+  >
+
+  <script
+    src="/js/setup-account.js"
+    defer
+  ></script>
+</head>
+
+<body>
+  <main class="setup-page">
+    <section class="setup-card">
+      <div class="setup-heading">
+        <p class="eyebrow">COLLECTIVE</p>
+
+        <h1>Create Your Account</h1>
+
+        <p>
+          Choose a username and password to activate your
+          Collective account.
+        </p>
+      </div>
+
+      <form id="setupAccountForm">
+        <div class="form-group">
+          <label for="username">
+            Username
+          </label>
+
+          <input
+            id="username"
+            name="username"
+            type="text"
+            minlength="3"
+            maxlength="30"
+            autocomplete="username"
+            placeholder="Choose a username"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="password">
+            Password
+          </label>
+
+          <input
+            id="password"
+            name="password"
+            type="password"
+            minlength="10"
+            maxlength="128"
+            autocomplete="new-password"
+            placeholder="At least 10 characters"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">
+            Confirm Password
+          </label>
+
+          <input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            minlength="10"
+            maxlength="128"
+            autocomplete="new-password"
+            placeholder="Enter your password again"
+            required
+          >
+        </div>
+
+        <button
+          id="submitButton"
+          type="submit"
+        >
+          Create Account
+        </button>
+
+        <p
+          id="setupMessage"
+          class="setup-message"
+          role="status"
+          aria-live="polite"
+        ></p>
+      </form>
+    </section>
+  </main>
+</body>
+
+</html>
