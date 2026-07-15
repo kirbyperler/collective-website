@@ -1,3 +1,37 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/player/me",
+      "destination": "/api/player?action=me"
+    },
+    {
+      "source": "/api/player/messages",
+      "destination": "/api/player?action=messages"
+    },
+    {
+      "source": "/api/player/programs",
+      "destination": "/api/player?action=programs"
+    },
+    {
+      "source": "/api/player/contacts",
+      "destination": "/api/player?action=contacts"
+    },
+    {
+      "source": "/api/player/progress",
+      "destination": "/api/player?action=progress"
+    },
+    {
+      "source": "/api/player/files",
+      "destination": "/api/files?action=files"
+    },
+    {
+      "source": "/api/player/avatar",
+      "destination": "/api/files?action=avatar"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/player.html"
+    }
+  ]
 }
