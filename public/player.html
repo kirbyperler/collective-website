@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Collective | Player Dashboard</title>
+  <link rel="stylesheet" href="css/player.css" />
+  <script src="js/player.js" defer></script>
+</head>
+<body>
+  <div class="player-shell">
+    <header class="topbar">
+
+      <button
+        class="mobile-menu"
+        type="button"
+        onclick="toggleSidebar()"
+      >
+        Menu
+      </button>
+
+      <a
+        class="logo"
+        href="#"
+        onclick="showPage('overview')"
+      >
+        Collective
+      </a>
+
+      <p
+        class="topbar-title"
+        id="topbarTitle"
+      >
+        Overview
+      </p>
+
+      <button
+        class="logout-button"
+        type="button"
+        onclick="logout()"
+      >
+        Log Out
+      </button>
+
+</header>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-orb">C</div>
+      <nav class="side-nav">
+        <button class="side-link active" data-page="overview" onclick="showPage('overview')">Overview</button>
+        <button class="side-link" data-page="profile" onclick="showPage('profile')">Profile</button>
+        <button class="side-link" data-page="recruiting" onclick="showPage('recruiting')">Recruiting</button>
+        <button class="side-link" data-page="messages" onclick="showPage('messages')">Messages</button>
+        <button class="side-link" data-page="files" onclick="showPage('files')">Files</button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <section class="page active" id="overviewPage">
+        <div class="overview-grid">
+          <article class="card player-profile-card">
+            <div class="card-header"><span>Player Profile</span><button class="open-button" onclick="showPage('profile')">Open</button></div>
+            <div class="card-body profile-card-body">
+              <div class="profile-primary">
+                <button class="profile-image-placeholder" type="button" onclick="showPage('profile')">
+                  <img id="overviewAvatar" alt="Player avatar" hidden />
+                  <span id="overviewAvatarPlaceholder">Add Photo</span>
+                </button>
+                <div class="profile-copy">
+                  <p class="eyebrow">Player Portal</p>
+                  <h1 id="welcomeName">Welcome back</h1>
+                  <p id="overviewPosition">Position</p>
+                  <p class="muted" id="welcomeMeta">Your development dashboard is ready.</p>
+                  <span class="status-tag" id="overviewCareerStatus">Career status</span>
+                </div>
+              </div>
+              <div class="section-divider"></div>
+              <h3 class="section-label">Player Information</h3>
+              <div id="overviewProfile"></div>
+            </div>
+          </article>
+
+          <section class="feature-stage" aria-label="Player image display">
+            <div class="stage-grid"></div><div class="stage-glow"></div>
+            <div class="stage-image-wrap">
+              <img id="stageAvatar" alt="Player" hidden />
+              <span id="stageAvatarPlaceholder">Player Image</span>
+            </div>
+            <strong>Collective</strong><p>Development is the difference</p>
+          </section>
+
+          <article class="card messages-card overview-card">
+            <div class="card-header"><span>Messages</span><button class="open-button" onclick="showPage('messages')">Open</button></div>
+            <div class="card-body message-list">
+              <div class="overview-inline-summary"><strong id="overviewUnreadCount">0</strong><span class="muted small">Unread</span></div>
+              <div class="preview-list" id="overviewMessageList"></div>
+            </div>
+            <button class="card-footer-button" onclick="showPage('messages')">Go to Messages <span>›</span></button>
+          </article>
+
+          <article class="card recruiting-card overview-card">
+            <div class="card-header"><span>Programs Interested In You</span><button class="open-button" onclick="showPage('recruiting')">Open</button></div>
+            <div class="card-body mini-list">
+              <div class="overview-inline-summary"><strong id="overviewInterestedCount">0</strong><span class="muted small">Active programs</span></div>
+              <div class="preview-list" id="overviewInterestedList"></div>
+            </div>
+            <button class="card-footer-button" onclick="showPage('recruiting')">View Recruiting <span>›</span></button>
+          </article>
+
+          <article class="card progress-card overview-card">
+            <div class="card-header"><span>Progress</span><button class="open-button" onclick="showPage('profile'); setProfilePanel('progress')">Open</button></div>
+            <div class="card-body progress-preview" id="overviewProgress"></div>
+            <button class="card-footer-button" onclick="showPage('profile'); setProfilePanel('progress')">Full Breakdown <span>›</span></button>
+          </article>
+
+          <article class="card files-card overview-card">
+            <div class="card-header"><span>Files</span><button class="open-button" onclick="showPage('files')">Open</button></div>
+            <div class="card-body mini-list">
+              <div class="overview-inline-summary"><strong id="overviewFileCount">0</strong><span class="muted small">Photos and videos</span></div>
+              <div class="preview-list" id="overviewFileList"></div>
+            </div>
+            <button class="card-footer-button" onclick="showPage('files')">View All Files <span>›</span></button>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" id="profilePage">
+        <div class="workspace-header"><div><p class="eyebrow">Player Information</p><h2>Profile</h2></div><div class="segmented-control"><button class="segment active" data-profile-panel="details" onclick="setProfilePanel('details')">Details</button><button class="segment" data-profile-panel="progress" onclick="setProfilePanel('progress')">Progress</button></div></div>
+        <div class="profile-panel active" id="profileDetailsPanel">
+          <div class="two-column-workspace profile-workspace">
+            <article class="card avatar-card"><div class="card-header"><span>Player Photo</span></div><div class="avatar-editor"><div class="large-avatar-frame"><img id="profileAvatar" alt="Player avatar" hidden /><span id="profileAvatarPlaceholder">No photo uploaded</span></div><input class="field" id="avatarInput" type="file" accept="image/*" /><button class="button full" type="button" onclick="uploadAvatar()">Upload Photo</button><button class="button secondary full" type="button" onclick="deleteAvatar()">Remove Photo</button></div></article>
+            <article class="card"><div class="card-header"><span>Profile Information</span><span class="pill" id="profileStatusPill">Player</span></div><form class="dashboard-form" id="profileForm" onsubmit="saveProfile(event)">
+              <div class="form-row"><div class="form-group"><label for="firstName">First Name</label><input id="firstName" required /></div><div class="form-group"><label for="lastName">Last Name</label><input id="lastName" required /></div></div>
+              <div class="form-row"><div class="form-group"><label for="birthYear">Birth Year</label><input id="birthYear" inputmode="numeric" /></div><div class="form-group"><label for="position">Position</label><select id="position"><option value="">Select Position</option><option>Forward</option><option>Defense</option><option>Goalie</option></select></div></div>
+              <div class="form-row"><div class="form-group"><label for="currentTeam">Current Team</label><input id="currentTeam" /></div><div class="form-group"><label for="shoots">Shoots / Catches</label><select id="shoots"><option value="">Select</option><option>Left</option><option>Right</option></select></div></div>
+              <div class="form-row"><div class="form-group"><label for="height">Height</label><input id="height" placeholder="5'10&quot;" /></div><div class="form-group"><label for="weight">Weight</label><input id="weight" placeholder="175 lbs" /></div></div>
+              <div class="form-row"><div class="form-group"><label for="email">Email</label><input id="email" type="email" /></div><div class="form-group"><label for="phone">Phone</label><input id="phone" type="tel" /></div></div>
+              <div class="form-group"><label for="careerStatus">Career Status</label><select id="careerStatus" required><option value="Youth">Youth</option><option value="Prep">Prep</option><option value="Juniors">Juniors</option><option value="College">College</option><option value="Pro">Pro</option></select></div>
+              <div class="form-group"><label for="bio">Player Bio</label><textarea id="bio" placeholder="Background, goals, playing style..."></textarea></div><button class="button full" type="submit">Save Profile</button>
+            </form></article>
+          </div>
+        </div>
+        <div class="profile-panel" id="profileProgressPanel"><article class="card progress-workspace-card"><div class="card-header"><span>Development Ratings</span><span class="pill">Coach / Advisor / Admin ratings</span></div><div class="progress-layout"><div id="progressRatings" class="rating-list"></div><div id="progressHistory" class="progress-history"></div></div></article></div>
+      </section>
+
+      <section class="page" id="recruitingPage">
+        <div class="workspace-header"><div><p class="eyebrow">Your Future</p><h2>Recruiting</h2></div><span class="pill" id="recruitingStatusPill">Career Status</span></div>
+        <div class="recruiting-grid">
+          <article class="card"><div class="card-header"><span>Programs Interested In You</span><span class="pill" id="programsInterestedCount">0 programs</span></div><form class="inline-entry-form" onsubmit="addProgram(event, 'interestedInPlayer')"><input id="interestedInPlayerName" placeholder="Program name" required /><select id="interestedInPlayerLevel"></select><input id="interestedInPlayerContact" placeholder="Contact or note" /><button class="button" type="submit">Add</button></form><div class="workspace-list inside-card" id="programsInterestedList"></div></article>
+          <article class="card"><div class="card-header"><span>Programs You Are Interested In</span><span class="pill" id="playerInterestedCount">0 programs</span></div><form class="inline-entry-form" onsubmit="addProgram(event, 'playerInterested')"><input id="playerInterestedName" placeholder="Program name" required /><select id="playerInterestedLevel"></select><input id="playerInterestedContact" placeholder="Contact or note" /><button class="button" type="submit">Add</button></form><div class="workspace-list inside-card" id="playerInterestedList"></div></article>
+        </div>
+      </section>
+
+      <section class="page" id="messagesPage">
+        <div class="workspace-header"><div><p class="eyebrow">Communication</p><h2>Messages</h2></div><input class="search wide" id="messageSearch" type="search" placeholder="Search messages..." oninput="renderMessages()" /></div>
+        <div class="two-column-workspace messages-workspace"><article class="card"><div class="card-header"><span>Send Message</span></div><form class="dashboard-form" onsubmit="sendMessage(event)"><div class="form-group"><label for="messageRecipient">Recipient</label><select id="messageRecipient" required></select></div><div class="form-group"><label for="messageSubject">Subject</label><input id="messageSubject" required /></div><div class="form-group"><label for="messageText">Message</label><textarea id="messageText" required></textarea></div><button class="button full" type="submit">Send Message</button></form></article><article class="card"><div class="card-header"><span>Message History</span><span class="pill" id="messageCountPill">0 messages</span></div><div class="workspace-list inside-card" id="messageList"></div></article></div>
+      </section>
+
+      <section class="page" id="filesPage">
+        <div class="workspace-header"><div><p class="eyebrow">Library</p><h2>Files</h2></div><input class="search wide" id="fileSearch" type="search" placeholder="Search files..." oninput="renderFiles()" /></div>
+        <div class="two-column-workspace files-workspace"><article class="card"><div class="card-header"><span>Upload File</span></div><form class="dashboard-form" onsubmit="uploadFile(event)"><div class="form-group"><label for="fileInput">Photo, Video, or Document</label><input id="fileInput" type="file" required /></div><div class="form-group"><label for="fileCategory">Category</label><select id="fileCategory"><option>Photo</option><option>Video</option><option>Game Film</option><option>Training</option><option>Document</option><option>Other</option></select></div><div class="form-group"><label for="fileNote">Note</label><textarea id="fileNote" placeholder="Optional description..."></textarea></div><button class="button full" type="submit">Upload File</button></form></article><article class="card"><div class="card-header"><span>Your Files</span><span class="pill" id="fileCountPill">0 files</span></div><div class="file-grid" id="fileList"></div></article></div>
+      </section>
+    </main>
+
+    <footer class="footer"><div><strong>Collective</strong><span>Private Development Ecosystem</span></div><span class="connected">● Connected</span></footer>
+  </div>
+</body>
+</html>
