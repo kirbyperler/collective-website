@@ -1,11 +1,11 @@
 const API = {
-  me: "/api/player/me",
-  messages: "/api/player/messages",
-  programs: "/api/player/programs",
-  files: "/api/player/files",
-  progress: "/api/player/progress",
-  contacts: "/api/player/contacts",
-  avatar: "/api/player/avatar"
+  me: "/api/player?action=me",
+  messages: "/api/player?action=messages",
+  programs: "/api/player?action=programs",
+  files: "/api/files?action=files",
+  progress: "/api/player?action=progress",
+  contacts: "/api/player?action=contacts",
+  avatar: "/api/files?action=avatar"
 };
 
 let player = null;
