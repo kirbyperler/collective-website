@@ -19,9 +19,11 @@
   },
   "homepage": "https://github.com/kirbyperler/collective-website#readme",
   "dependencies": {
+    "@vercel/blob": "^2.6.1",
     "@vercel/functions": "^3.7.5",
     "bcryptjs": "^3.0.3",
-    "mongodb": "^7.4.0",
+    "formidable": "^3.5.4",
+    "mongodb": "^7.5.0",
     "resend": "^6.17.2"
   }
 }
