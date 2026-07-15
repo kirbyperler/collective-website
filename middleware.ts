@@ -143,8 +143,8 @@ function requiredRole(pathname: string) {
     }
 
     if (
-        pathname === "/player" ||
-        pathname === "/player.html"
+        pathname === "/dashboard" ||
+        pathname === "/dashboard.html"
     ) {
         return "Player";
     }
@@ -218,7 +218,7 @@ export default async function middleware(
 
         const correctDashboard = {
             Admin: "/admin",
-            Player: "/player",
+            Player: "/dashboard",
             Coach: "/coach",
             Advisor: "/advisor"
         }[session.role];
@@ -237,8 +237,8 @@ export const config = {
         "/admin",
         "/admin.html",
 
-        "/player",
-        "/player.html",
+        "/dashboard",
+        "/dashboard.html",
 
         "/coach",
         "/coach.html",

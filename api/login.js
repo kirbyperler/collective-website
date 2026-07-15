@@ -99,7 +99,7 @@ function normalizeRole(role) {
 
 function getRedirectPath(role) {
     if (role === "Admin") return "/admin";
-    if (role === "Player") return "/player";
+    if (role === "Player") return "/dashboard";
     if (role === "Coach") return "/coach";
     if (role === "Advisor") return "/advisor";
 
