@@ -4,9 +4,19 @@ const {
     timingSafeEqual
 } = require("crypto");
 
+const bcrypt = require("bcryptjs");
 const { getDb } = require("./db");
 
-function verifyPassword(password, storedPasswordHash) {
+/*
+ * Used for the admin password stored in Vercel.
+ * Your existing admin password uses:
+ *
+ * salt:hash
+ */
+function verifyScryptPassword(
+    password,
+    storedPasswordHash
+) {
     if (
         typeof password !== "string" ||
         typeof storedPasswordHash !== "string"
@@ -44,8 +54,40 @@ function verifyPassword(password, storedPasswordHash) {
     );
 }
 
+/*
+ * Player, coach, and advisor passwords were created
+ * using bcryptjs during account setup.
+ */
+async function verifyUserPassword(
+    password,
+    storedPasswordHash
+) {
+    if (
+        typeof password !== "string" ||
+        typeof storedPasswordHash !== "string"
+    ) {
+        return false;
+    }
+
+    try {
+        return await bcrypt.compare(
+            password,
+            storedPasswordHash
+        );
+    } catch (error) {
+        console.error(
+            "Password comparison error:",
+            error
+        );
+
+        return false;
+    }
+}
+
 function normalizeRole(role) {
-    const value = String(role || "").toLowerCase();
+    const value = String(role || "")
+        .trim()
+        .toLowerCase();
 
     if (value === "admin") return "Admin";
     if (value === "player") return "Player";
@@ -57,7 +99,7 @@ function normalizeRole(role) {
 
 function getRedirectPath(role) {
     if (role === "Admin") return "/admin";
-    if (role === "Player") return "/dashboard";
+    if (role === "Player") return "/player";
     if (role === "Coach") return "/coach";
     if (role === "Advisor") return "/advisor";
 
@@ -75,7 +117,8 @@ function createSessionToken(sessionData) {
         ...sessionData,
 
         // Eight-hour session.
-        expiresAt: Date.now() + 8 * 60 * 60 * 1000
+        expiresAt:
+            Date.now() + 8 * 60 * 60 * 1000
     };
 
     const encodedPayload = Buffer
@@ -107,80 +150,123 @@ module.exports = async function handler(req, res) {
             password
         } = req.body || {};
 
-        if (!username || !password) {
+        if (
+            typeof username !== "string" ||
+            typeof password !== "string" ||
+            !username.trim() ||
+            !password
+        ) {
             return res.status(400).json({
-                message: "Username and password are required."
+                message:
+                    "Username and password are required."
             });
         }
 
-        const normalizedUsername = String(username)
+        if (!process.env.SESSION_SECRET) {
+            console.error(
+                "SESSION_SECRET is missing."
+            );
+
+            return res.status(500).json({
+                message:
+                    "Authentication is not configured."
+            });
+        }
+
+        const normalizedUsername =
+            username.trim().toLowerCase();
+
+        const adminUsername = String(
+            process.env.ADMIN_USERNAME || ""
+        )
             .trim()
             .toLowerCase();
 
-        if (
-          !process.env.ADMIN_USERNAME ||
-          !process.env.ADMIN_PASSWORD_HASH ||
-          !process.env.SESSION_SECRET
-      ) {
-          console.error("Authentication environment variables are missing.");
-
-          return res.status(500).json({
-            message: "Authentication is not configured."
-          });
-      }
-
-        let role;
+        let role = null;
         let userId = null;
-        let passwordHash;
+        let passwordIsCorrect = false;
 
         /*
-         * Admin account:
-         * username and password hash come from Vercel.
+         * Check the separate admin account first.
          */
         if (
-            normalizedUsername ===
-            String(process.env.ADMIN_USERNAME || "")
-                .trim()
-                .toLowerCase()
+            adminUsername &&
+            normalizedUsername === adminUsername
         ) {
+            if (!process.env.ADMIN_PASSWORD_HASH) {
+                console.error(
+                    "ADMIN_PASSWORD_HASH is missing."
+                );
+
+                return res.status(500).json({
+                    message:
+                        "Admin authentication is not configured."
+                });
+            }
+
             role = "Admin";
-            passwordHash =
-                process.env.ADMIN_PASSWORD_HASH;
+
+            passwordIsCorrect =
+                verifyScryptPassword(
+                    password,
+                    process.env.ADMIN_PASSWORD_HASH
+                );
         } else {
             /*
-             * Player, coach, or advisor:
-             * their email is their username.
+             * Player, coach, or advisor account.
+             *
+             * The account setup process stores:
+             * usernameLower
+             * passwordHash
+             * accountStatus
              */
             const db = await getDb();
 
             const user = await db
                 .collection("users")
                 .findOne({
-                    email: normalizedUsername
+                    usernameLower:
+                        normalizedUsername
                 });
 
             if (user) {
                 role = normalizeRole(user.type);
                 userId = String(user._id);
-                passwordHash = user.passwordHash;
+
+                /*
+                 * Only activated accounts may log in.
+                 */
+                if (user.accountStatus !== "Active") {
+                    return res.status(403).json({
+                        message:
+                            "This account has not been activated."
+                    });
+                }
+
+                passwordIsCorrect =
+                    await verifyUserPassword(
+                        password,
+                        user.passwordHash
+                    );
             }
         }
 
-        const passwordIsCorrect = verifyPassword(
-            password,
-            passwordHash
-        );
-
+        /*
+         * Keep the response generic so it does not reveal
+         * whether a username exists.
+         */
         if (
             !role ||
             !passwordIsCorrect
         ) {
             return res.status(401).json({
-                message: "Invalid username or password."
+                message:
+                    "Invalid username or password."
             });
         }
 
-        const redirectTo = getRedirectPath(role);
+        const redirectTo =
+            getRedirectPath(role);
 
         if (!redirectTo) {
             return res.status(403).json({
@@ -189,23 +275,34 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        const sessionToken = createSessionToken({
-            userId,
-            role
-        });
+        const sessionToken =
+            createSessionToken({
+                userId,
+                role
+            });
 
-        const maxAge = 8 * 60 * 60;
+        const maxAge =
+            8 * 60 * 60;
+
+        const cookieParts = [
+            `collective_session=${sessionToken}`,
+            "Path=/",
+            `Max-Age=${maxAge}`,
+            "HttpOnly",
+            "SameSite=Strict"
+        ];
+
+        /*
+         * Secure cookies require HTTPS.
+         * Vercel production uses HTTPS.
+         */
+        if (process.env.NODE_ENV === "production") {
+            cookieParts.push("Secure");
+        }
 
         res.setHeader(
             "Set-Cookie",
-            [
-                `collective_session=${sessionToken}`,
-                "Path=/",
-                `Max-Age=${maxAge}`,
-                "HttpOnly",
-                "Secure",
-                "SameSite=Strict"
-            ].join("; ")
+            cookieParts.join("; ")
         );
 
         return res.status(200).json({
@@ -213,7 +310,10 @@ module.exports = async function handler(req, res) {
             redirectTo
         });
     } catch (error) {
-        console.error("Login API error:", error);
+        console.error(
+            "Login API error:",
+            error
+        );
 
         return res.status(500).json({
             message: "Server error."
