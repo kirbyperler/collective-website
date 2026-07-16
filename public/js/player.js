@@ -310,8 +310,10 @@ async function deleteFile(id) {
 }
 
 async function logout() {
-  await apiRequest("/api/logout", { method: "POST" });
-  window.location.replace("/login");
+  await fetch("/api/auth?action=logout", {
+    method: "POST",
+    credentials: "same-origin"
+});
 }
 
 loadDashboard();
