@@ -310,10 +310,35 @@ async function deleteFile(id) {
 }
 
 async function logout() {
-  await fetch("/api/auth?action=logout", {
-    method: "POST",
-    credentials: "same-origin"
-});
-}
+  try {
+    const response = await fetch(
+      "/api/auth?action=logout",
+      {
+        method: "POST",
+        credentials: "same-origin"
+      }
+    );
 
-loadDashboard();
+    const contentType =
+      response.headers.get("content-type") || "";
+
+    const data = contentType.includes("application/json")
+      ? await response.json()
+      : {
+          error: await response.text()
+        };
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        data.message ||
+        "Unable to log out."
+      );
+    }
+
+    window.location.replace("/login");
+  } catch (error) {
+    console.error("Logout error:", error);
+    alert(error.message);
+  }
+}
