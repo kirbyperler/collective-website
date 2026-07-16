@@ -2,8 +2,42 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/login",
+      "destination": "/api/auth?action=login"
+    },
+    {
+      "source": "/api/logout",
+      "destination": "/api/auth?action=logout"
+    },
+    {
+      "source": "/api/complete-account-setup",
+      "destination": "/api/auth?action=complete-account-setup"
+    },
+
+    {
+      "source": "/api/users",
+      "destination": "/api/admin?action=users"
+    },
+    {
+      "source": "/api/messages",
+      "destination": "/api/admin?action=messages"
+    },
+    {
+      "source": "/api/player-progress-admin",
+      "destination": "/api/admin?action=progress"
+    },
+    {
+      "source": "/api/accept-inquiry",
+      "destination": "/api/admin?action=accept-inquiry"
+    },
+
+    {
       "source": "/api/player/me",
       "destination": "/api/player?action=me"
+    },
+    {
+      "source": "/api/player/contacts",
+      "destination": "/api/player?action=contacts"
     },
     {
       "source": "/api/player/messages",
@@ -12,10 +46,6 @@
     {
       "source": "/api/player/programs",
       "destination": "/api/player?action=programs"
-    },
-    {
-      "source": "/api/player/contacts",
-      "destination": "/api/player?action=contacts"
     },
     {
       "source": "/api/player/progress",
@@ -29,9 +59,26 @@
       "source": "/api/player/avatar",
       "destination": "/api/files?action=avatar"
     },
+
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/player",
+      "destination": "/player.html"
+    },
     {
       "source": "/dashboard",
       "destination": "/player.html"
+    },
+    {
+      "source": "/inquiry",
+      "destination": "/inquiry.html"
     }
   ]
 }

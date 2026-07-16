@@ -10,7 +10,7 @@ function normalizeRole(role) {
 }
 
 function redirectFor(role) {
-  return ({ Admin: "/admin", Player: "/dashboard", Coach: "/coach", Advisor: "/advisor" })[role] || null;
+  return ({ Admin: "/admin", Player: "/player", Coach: "/coach", Advisor: "/advisor" })[role] || null;
 }
 
 function verifyScrypt(password, stored) {
