@@ -154,71 +154,124 @@ if (roleButtons.length && positionContainer && positionButtons.length) {
 // Login form
 // ============================================
 
-const loginForm = document.getElementById("loginForm");
+const loginForm =
+    document.getElementById("loginForm");
 
 if (loginForm) {
-    loginForm.addEventListener("submit", async function(event) {
-        event.preventDefault();
+    loginForm.addEventListener(
+        "submit",
+        async function(event) {
+            event.preventDefault();
 
-        const usernameInput =
-            document.getElementById("username");
+            const usernameInput =
+                document.getElementById("username");
 
-        const passwordInput =
-            document.getElementById("password");
+            const passwordInput =
+                document.getElementById("password");
 
-        const loginButton =
-            document.getElementById("loginButton");
+            const loginButton =
+                document.getElementById("loginButton");
 
-        const loginMessage =
-            document.getElementById("loginMessage");
+            const loginMessage =
+                document.getElementById("loginMessage");
 
-        const username = usernameInput.value
-            .trim()
-            .toLowerCase();
+            const username =
+                usernameInput.value
+                    .trim()
+                    .toLowerCase();
 
-        const password = passwordInput.value;
+            const password =
+                passwordInput.value;
 
-        loginButton.disabled = true;
-        loginButton.textContent = "Signing In...";
-        loginMessage.textContent = "";
+            loginButton.disabled = true;
+            loginButton.textContent =
+                "Signing In...";
 
-        try {
-            const response = await fetch("/api/auth?action=login", {
-                method: "POST",
-                credentials: "same-origin",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    username,
-                    password
-                })
-            });
+            loginMessage.textContent = "";
 
-            const data = await response.json();
+            try {
+                const response = await fetch(
+                    "/api/auth?action=login",
+                    {
+                        method: "POST",
 
-            if (!response.ok) {
-                throw new Error(
-                    data.message || "Unable to sign in."
+                        credentials:
+                            "same-origin",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            username,
+                            password
+                        })
+                    }
                 );
-            }
 
-            if (!data.redirectTo) {
-                throw new Error(
-                    "No dashboard is assigned to this account."
+                const contentType =
+                    response.headers.get(
+                        "content-type"
+                    ) || "";
+
+                let data;
+
+                if (
+                    contentType.includes(
+                        "application/json"
+                    )
+                ) {
+                    data =
+                        await response.json();
+                } else {
+                    const responseText =
+                        await response.text();
+
+                    console.error(
+                        "Non-JSON login response:",
+                        response.status,
+                        responseText
+                    );
+
+                    throw new Error(
+                        `Login API returned ${response.status}. ` +
+                        responseText.slice(0, 200)
+                    );
+                }
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.message ||
+                        data.error ||
+                        "Unable to sign in."
+                    );
+                }
+
+                if (!data.redirectTo) {
+                    throw new Error(
+                        "No dashboard is assigned to this account."
+                    );
+                }
+
+                window.location.href =
+                    data.redirectTo;
+            } catch (error) {
+                console.error(
+                    "Login error:",
+                    error
                 );
+
+                loginMessage.textContent =
+                    error.message;
+
+                passwordInput.value = "";
+                passwordInput.focus();
+            } finally {
+                loginButton.disabled = false;
+                loginButton.textContent =
+                    "Log In";
             }
-
-            window.location.href = data.redirectTo;
-        } catch (error) {
-            console.error("Login error:", error);
-
-            loginMessage.textContent = error.message;
-            passwordInput.value = "";
-            passwordInput.focus();
-        } finally {
-            loginButton.disabled = false;
-            loginButton.textContent = "Log In";
         }
-    });
+    );
 }
