@@ -608,7 +608,7 @@ module.exports =
   ) {
     try {
       const session =
-        getSession(req);
+        await getSession(req);
 
       if (!session) {
         return res.status(401).json({

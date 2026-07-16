@@ -114,7 +114,7 @@ module.exports = async function handler(req, res) {
     if (route === "complete-account-setup") return completeSetup(req, res);
     if (route === "session") {
       if (!allowMethods(req, res, ["GET"])) return;
-      const session = getSession(req);
+      const session = await getSession(req);
       return session ? res.status(200).json({ session }) : res.status(401).json({ error: "No active session." });
     }
     return res.status(404).json({ error: "Authentication action not found." });
