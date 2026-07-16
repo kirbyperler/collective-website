@@ -88,32 +88,173 @@ function allowedRecruitingLevels(status) {
 
 async function loadDashboard() {
   try {
-    const [meData, messageData, programData, fileData, progressData, contactData] = await Promise.all([
-      apiRequest(API.me),
-      apiRequest(API.messages),
-      apiRequest(API.programs),
-      apiRequest(API.files),
-      apiRequest(API.progress),
-      apiRequest(API.contacts)
-    ]);
+    /*
+     * Load the logged-in player's profile first.
+     * This is the only required request.
+     */
+    const meData =
+      await apiRequest(API.me);
 
-    player = { ...emptyPlayer, ...(meData?.player || {}) };
-    messages = messageData?.messages || [];
-    programs = {
-      interestedInPlayer: programData?.interestedInPlayer || [],
-      playerInterested: programData?.playerInterested || []
+    player = {
+      ...emptyPlayer,
+      ...(meData?.player || {})
     };
-    files = fileData?.files || [];
-    progressRatings = progressData?.ratings || [];
-    contacts = contactData?.contacts || [];
 
+    /*
+     * Render the player immediately so another
+     * feature cannot block the profile information.
+     */
     fillProfileForm();
+    fillRecruitingLevels();
+    renderOverview();
+    renderProfile();
+
+    /*
+     * Load the remaining dashboard features separately.
+     * A failure in one feature will no longer stop
+     * the entire dashboard from loading.
+     */
+    const results =
+      await Promise.allSettled([
+        apiRequest(API.messages),
+        apiRequest(API.programs),
+        apiRequest(API.files),
+        apiRequest(API.progress),
+        apiRequest(API.contacts)
+      ]);
+
+    const [
+      messageResult,
+      programResult,
+      fileResult,
+      progressResult,
+      contactResult
+    ] = results;
+
+    if (
+      messageResult.status ===
+      "fulfilled"
+    ) {
+      messages =
+        Array.isArray(
+          messageResult.value?.messages
+        )
+          ? messageResult.value.messages
+          : [];
+    } else {
+      messages = [];
+
+      console.error(
+        "Messages failed:",
+        messageResult.reason
+      );
+    }
+
+    if (
+      programResult.status ===
+      "fulfilled"
+    ) {
+      programs = {
+        interestedInPlayer:
+          Array.isArray(
+            programResult.value
+              ?.interestedInPlayer
+          )
+            ? programResult.value
+                .interestedInPlayer
+            : [],
+
+        playerInterested:
+          Array.isArray(
+            programResult.value
+              ?.playerInterested
+          )
+            ? programResult.value
+                .playerInterested
+            : []
+      };
+    } else {
+      programs = {
+        interestedInPlayer: [],
+        playerInterested: []
+      };
+
+      console.error(
+        "Programs failed:",
+        programResult.reason
+      );
+    }
+
+    if (
+      fileResult.status ===
+      "fulfilled"
+    ) {
+      files =
+        Array.isArray(
+          fileResult.value?.files
+        )
+          ? fileResult.value.files
+          : [];
+    } else {
+      files = [];
+
+      console.error(
+        "Files failed:",
+        fileResult.reason
+      );
+    }
+
+    if (
+      progressResult.status ===
+      "fulfilled"
+    ) {
+      progressRatings =
+        Array.isArray(
+          progressResult.value?.ratings
+        )
+          ? progressResult.value.ratings
+          : [];
+    } else {
+      progressRatings = [];
+
+      console.error(
+        "Progress failed:",
+        progressResult.reason
+      );
+    }
+
+    if (
+      contactResult.status ===
+      "fulfilled"
+    ) {
+      contacts =
+        Array.isArray(
+          contactResult.value?.contacts
+        )
+          ? contactResult.value.contacts
+          : [];
+    } else {
+      contacts = [];
+
+      console.error(
+        "Contacts failed:",
+        contactResult.reason
+      );
+    }
+
     fillContacts();
     fillRecruitingLevels();
     renderEverything();
   } catch (error) {
-    console.error("Dashboard load error:", error);
-    alert(error.message);
+    console.error(
+      "Player profile load error:",
+      error
+    );
+
+    alert(
+      "Unable to load the logged-in player: " +
+      error.message
+    );
   }
 }
 function fullName() { return `${player?.firstName || ""} ${player?.lastName || ""}`.trim() || "Player"; }
