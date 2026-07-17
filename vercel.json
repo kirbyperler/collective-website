@@ -1,5 +1,11 @@
 {
   "cleanUrls": true,
+  "crons": [
+    {
+      "path": "/api/admin?action=syncEliteProspects",
+      "schedule": "0 8 1 * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/login",
