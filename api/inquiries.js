@@ -1,6 +1,7 @@
 const { getDb, toObjectId, serialize } = require("../lib/db");
 const { getSession } = require("../lib/auth");
 const { allowMethods, cleanText } = require("../lib/http");
+const { isValidEliteProspectsUrl } = require("../lib/eliteProspects");
 
 module.exports = async function handler(req, res) {
   try {
@@ -10,18 +11,24 @@ module.exports = async function handler(req, res) {
 
     if (req.method === "POST") {
       const body = req.body || {};
-      if (!body.firstName || !body.lastName || !body.role || !body.email) {
+      const role = cleanText(body.role, 30).toLowerCase();
+      if (!body.firstName || !body.lastName || !role || !body.email) {
         return res.status(400).json({ error: "First name, last name, role, and email are required." });
       }
+      if (!["player", "coach", "advisor"].includes(role)) {
+        return res.status(400).json({ error: "Role must be player, coach, or advisor." });
+      }
+      const eliteProspectsUrl = role === "player" ? cleanText(body.eliteProspects, 300) : "";
       const document = {
         firstName: cleanText(body.firstName, 100),
         lastName: cleanText(body.lastName, 100),
-        role: cleanText(body.role, 30).toLowerCase(),
+        role,
         position: cleanText(body.position, 50),
         birthYear: cleanText(body.birthYear, 10),
         phoneNumber: cleanText(body.phoneNumber, 50),
         email: cleanText(body.email, 200).toLowerCase(),
         goals: cleanText(body.goals, 2000),
+        eliteProspects: eliteProspectsUrl && isValidEliteProspectsUrl(eliteProspectsUrl) ? eliteProspectsUrl : "",
         createdAt: new Date()
       };
       const result = await collection.insertOne(document);

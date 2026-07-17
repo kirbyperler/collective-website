@@ -64,6 +64,19 @@ function formatPlayer(player) {
     eliteProspects:
       player.eliteProspects || "",
 
+    epData:
+      player.epData || null,
+
+    epSync:
+      player.epSync
+        ? {
+            status: player.epSync.status || "never",
+            lastAttemptedAt: player.epSync.lastAttemptedAt || null,
+            lastSuccessfulAt: player.epSync.lastSuccessfulAt || null,
+            errorCode: player.epSync.errorCode || null
+          }
+        : null,
+
     avatarUrl:
       player.avatarUrl || "",
 

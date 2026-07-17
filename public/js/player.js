@@ -35,23 +35,11 @@ const emptyPlayer = {
   weight: "",
   careerStatus: "Youth",
   bio: "",
-  avatarUrl: ""
+  avatarUrl: "",
+  eliteProspects: "",
+  epData: null,
+  epSync: null
 };
-
-function escapeHtml(value = "") {
-  return String(value).replace(
-    /[&<>'"]/g,
-    function(character) {
-      return {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "'": "&#39;",
-        '"': "&quot;"
-      }[character];
-    }
-  );
-}
 
 async function apiRequest(
   url,
@@ -110,66 +98,6 @@ async function apiRequest(
   }
 
   return data;
-}
-
-function showPage(pageName) {
-  document
-    .querySelectorAll(".page")
-    .forEach(function(page) {
-      page.classList.remove(
-        "active"
-      );
-    });
-
-  const selectedPage =
-    document.getElementById(
-      `${pageName}Page`
-    );
-
-  if (selectedPage) {
-    selectedPage.classList.add(
-      "active"
-    );
-  }
-
-  document
-    .querySelectorAll(
-      ".side-link"
-    )
-    .forEach(function(link) {
-      link.classList.toggle(
-        "active",
-        link.dataset.page ===
-          pageName
-      );
-    });
-
-  const title =
-    document.getElementById(
-      "topbarTitle"
-    );
-
-  if (title) {
-    title.textContent =
-      pageName
-        .charAt(0)
-        .toUpperCase() +
-      pageName.slice(1);
-  }
-
-  document
-    .getElementById(
-      "sidebar"
-    )
-    ?.classList.remove("open");
-}
-
-function toggleSidebar() {
-  document
-    .getElementById(
-      "sidebar"
-    )
-    ?.classList.toggle("open");
 }
 
 function setProfilePanel(panel) {
@@ -269,6 +197,7 @@ async function loadDashboard() {
     fillRecruitingLevels();
     renderOverview();
     renderProfile();
+    renderEliteProspects();
 
     /*
      * Load optional dashboard sections.
@@ -1008,6 +937,126 @@ function renderProfile() {
   );
 }
 
+function eliteProspectsSeasonLine(season) {
+  if (!season || (!season.team && !season.league && !season.season)) {
+    return "";
+  }
+
+  const parts = [
+    season.team,
+    season.league,
+    season.season
+  ].filter(Boolean).join(" · ");
+
+  const stats = [
+    season.gp != null ? `${season.gp} GP` : null,
+    season.goals != null ? `${season.goals}G` : null,
+    season.assists != null ? `${season.assists}A` : null,
+    season.points != null ? `${season.points}PTS` : null,
+    season.pim != null ? `${season.pim} PIM` : null,
+    season.plusMinus != null ? `${season.plusMinus > 0 ? "+" : ""}${season.plusMinus}` : null
+  ].filter(Boolean).join(" ");
+
+  return [parts, stats].filter(Boolean).join(" — ");
+}
+
+function eliteProspectsRecentFormLine(recentForm) {
+  if (!recentForm || recentForm.gp == null) {
+    return "";
+  }
+
+  const stats = [
+    `${recentForm.gp} GP`,
+    recentForm.goals != null ? `${recentForm.goals}G` : null,
+    recentForm.assists != null ? `${recentForm.assists}A` : null,
+    recentForm.points != null ? `${recentForm.points}PTS` : null,
+    recentForm.plusMinus != null ? `${recentForm.plusMinus > 0 ? "+" : ""}${recentForm.plusMinus}` : null
+  ].filter(Boolean).join(" ");
+
+  return `Last ${recentForm.spanGames} Games — ${stats}`;
+}
+
+function eliteProspectsContextLine(context) {
+  if (!context) return "";
+  return [context.team, context.league, context.season].filter(Boolean).join(" · ");
+}
+
+function renderEliteProspects() {
+  const overviewLine = document.getElementById("overviewEliteProspects");
+  const body = document.getElementById("eliteProspectsBody");
+  const statusPill = document.getElementById("epSyncStatusPill");
+
+  const epData = player?.epData || null;
+  const epSync = player?.epSync || null;
+  const seasonLine = eliteProspectsSeasonLine(epData?.latestSeason);
+  const recentFormLine = eliteProspectsRecentFormLine(epData?.recentForm);
+  const contextLine = eliteProspectsContextLine(epData?.currentContext);
+  const overviewSummary = seasonLine || recentFormLine || contextLine;
+
+  if (overviewLine) {
+    overviewLine.textContent = overviewSummary
+      ? `Elite Prospects: ${overviewSummary}`
+      : "Elite Prospects: Not synced yet.";
+  }
+
+  if (statusPill) {
+    statusPill.textContent =
+      epSync?.status === "success" ? "Synced" :
+      epSync?.status === "error" ? "Sync failed" :
+      "Not synced";
+  }
+
+  if (!body) {
+    return;
+  }
+
+  if (!player?.eliteProspects) {
+    body.innerHTML = `<p class="muted small">No Elite Prospects profile linked.</p>`;
+    return;
+  }
+
+  const bio = epData?.bio || {};
+  const bioFacts = [
+    ["Full Name", bio.fullName],
+    ["Date of Birth", bio.dateOfBirth],
+    ["Age", bio.age],
+    ["Place of Birth", bio.placeOfBirth],
+    ["Nationality", bio.nationality],
+    ["Position", bio.position],
+    ["Shoots/Catches", bio.shoots],
+    ["Height", bio.height],
+    ["Weight", bio.weight]
+  ].filter(function(fact) {
+    return fact[1] != null && fact[1] !== "";
+  });
+
+  const factsHtml = bioFacts.length
+    ? `<div class="profile-facts">${bioFacts.map(function(fact) {
+        return `<div class="fact-box"><span>${escapeHtml(fact[0])}</span><strong>${escapeHtml(String(fact[1]))}</strong></div>`;
+      }).join("")}</div>`
+    : `<p class="muted small">No biography data yet.</p>`;
+
+  const contextHtml = contextLine
+    ? `<p class="muted small" style="margin-top:10px">${escapeHtml(contextLine)}</p>`
+    : "";
+
+  const seasonHtml = seasonLine
+    ? `<p class="muted small" style="margin-top:10px"><strong>Latest Season:</strong> ${escapeHtml(seasonLine)}</p>`
+    : `<p class="muted small" style="margin-top:10px">No full season totals available.</p>`;
+
+  const recentFormHtml = recentFormLine
+    ? `<p class="muted small" style="margin-top:10px"><strong>${escapeHtml(recentFormLine)}</strong></p>`
+    : "";
+
+  const lastUpdated = epSync?.lastSuccessfulAt
+    ? new Date(epSync.lastSuccessfulAt).toLocaleDateString()
+    : "Never";
+
+  const linkHtml = `<p class="muted small" style="margin-top:10px"><a class="text-button" href="${escapeHtml(player.eliteProspects)}" target="_blank" rel="noopener noreferrer">View Elite Prospects Profile</a></p>`;
+
+  body.innerHTML = `${factsHtml}${contextHtml}${seasonHtml}${recentFormHtml}<p class="muted small" style="margin-top:10px">Last updated: ${escapeHtml(lastUpdated)}</p>${linkHtml}`;
+}
+
 function renderProgress() {
   const ratingsElement =
     document.getElementById(
@@ -1511,6 +1560,7 @@ function renderFiles() {
 function renderEverything() {
   renderOverview();
   renderProfile();
+  renderEliteProspects();
   renderProgress();
   renderPrograms();
   renderMessages();

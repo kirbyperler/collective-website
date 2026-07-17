@@ -279,6 +279,41 @@ export default async function middleware(
         return next();
     }
 
+    /*
+     * The weekly Elite Prospects cron job authenticates with a
+     * shared secret instead of a browser session cookie.
+     */
+    if (
+        pathname === "/api/admin" &&
+        url.searchParams.get("action")?.toLowerCase() ===
+            "synceliteprospects"
+    ) {
+        const expectedSecret =
+            process.env.CRON_SECRET;
+
+        const authHeader =
+            request.headers.get(
+                "authorization"
+            ) || "";
+
+        if (
+            expectedSecret &&
+            authHeader ===
+                `Bearer ${expectedSecret}`
+        ) {
+            return next();
+        }
+
+        return Response.json(
+            {
+                message: "Unauthorized."
+            },
+            {
+                status: 401
+            }
+        );
+    }
+
     const routeRequiresSession =
         requiresSession(pathname);
 

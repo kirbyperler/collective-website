@@ -83,6 +83,19 @@ if (inquiryForm) {
             goals: formData.get("goals")
         };
 
+        const eliteProspectsValue = String(formData.get("eliteProspects") || "").trim();
+
+        if (data.role === "player" && eliteProspectsValue) {
+            const eliteProspectsPattern = /^https:\/\/(www\.)?eliteprospects\.com\/player\/\d+\/[a-z0-9-]+/i;
+
+            if (!eliteProspectsPattern.test(eliteProspectsValue)) {
+                alert("Please enter a valid Elite Prospects player profile URL, or leave it blank.");
+                return;
+            }
+        }
+
+        data.eliteProspects = data.role === "player" ? eliteProspectsValue : "";
+
         try {
             const response = await fetch("/api/inquiries", {
                 method: "POST",
@@ -116,6 +129,8 @@ if (inquiryForm) {
 const roleButtons = document.querySelectorAll('input[name="role"]');
 const positionContainer = document.getElementById("positionContainer");
 const positionButtons = document.querySelectorAll('input[name="position"]');
+const eliteProspectsContainer = document.getElementById("eliteProspectsContainer");
+const eliteProspectsInput = document.getElementById("eliteProspects");
 
 if (roleButtons.length && positionContainer && positionButtons.length) {
 
@@ -135,6 +150,14 @@ if (roleButtons.length && positionContainer && positionButtons.length) {
                     `;
                 });
 
+                if (eliteProspectsContainer) {
+                    eliteProspectsContainer.style.display = "block";
+                }
+
+                if (eliteProspectsInput) {
+                    eliteProspectsInput.disabled = false;
+                }
+
             } else {
                 positionContainer.style.display = "none";
 
@@ -142,6 +165,15 @@ if (roleButtons.length && positionContainer && positionButtons.length) {
                     positionButton.required = false;
                     positionButton.checked = false;
                 });
+
+                if (eliteProspectsContainer) {
+                    eliteProspectsContainer.style.display = "none";
+                }
+
+                if (eliteProspectsInput) {
+                    eliteProspectsInput.disabled = true;
+                    eliteProspectsInput.value = "";
+                }
             }
 
         });

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Collective | Player Dashboard</title>
   <link rel="stylesheet" href="css/player.css" />
+  <script src="js/dashboard-common.js" defer></script>
   <script src="js/player.js" defer></script>
 </head>
 <body>
@@ -60,6 +61,7 @@
               <div class="section-divider"></div>
               <h3 class="section-label">Player Information</h3>
               <div id="overviewProfile"></div>
+              <p class="muted small" id="overviewEliteProspects"></p>
             </div>
           </article>
 
@@ -121,6 +123,7 @@
               <div class="form-group"><label for="careerStatus">Career Status</label><select id="careerStatus" required><option value="Youth">Youth</option><option value="Prep">Prep</option><option value="Juniors">Juniors</option><option value="College">College</option><option value="Pro">Pro</option></select></div>
               <div class="form-group"><label for="bio">Player Bio</label><textarea id="bio" placeholder="Background, goals, playing style..."></textarea></div><button class="button full" type="submit">Save Profile</button>
             </form></article>
+            <article class="card" id="eliteProspectsCard"><div class="card-header"><span>Elite Prospects</span><span class="pill" id="epSyncStatusPill">Not synced</span></div><div class="card-body" id="eliteProspectsBody"></div></article>
           </div>
         </div>
         <div class="profile-panel" id="profileProgressPanel"><article class="card progress-workspace-card"><div class="card-header"><span>Development Ratings</span><span class="pill">Coach / Advisor / Admin ratings</span></div><div class="progress-layout"><div id="progressRatings" class="rating-list"></div><div id="progressHistory" class="progress-history"></div></div></article></div>

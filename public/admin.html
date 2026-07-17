@@ -16,6 +16,11 @@
   />
 
   <script
+    src="js/dashboard-common.js"
+    defer
+  ></script>
+
+  <script
     src="js/admin.js"
     defer
   ></script>
@@ -666,6 +671,26 @@
                   id="eliteProspects"
                   placeholder="Elite Prospects URL, stats, or notes..."
                 ></textarea>
+
+              </div>
+
+
+              <div class="form-group hidden" id="eliteProspectsAdminSection">
+
+                <label class="field-label">
+                  Elite Prospects Sync
+                </label>
+
+                <div class="muted small" id="eliteProspectsAdminBody"></div>
+
+                <button
+                  class="button secondary"
+                  type="button"
+                  id="refreshEliteProspectsButton"
+                  onclick="refreshEliteProspects()"
+                >
+                  Refresh Elite Prospects Data
+                </button>
 
               </div>
 

@@ -3,6 +3,7 @@ const ADMIN_API = {
   messages: "/api/admin?action=messages",
   acceptInquiry: "/api/admin?action=accept-inquiry",
   progress: "/api/admin?action=progress",
+  refreshEliteProspects: "/api/admin?action=refreshEliteProspects",
   inquiries: "/api/inquiries",
   files: "/api/files?action=files",
   logout: "/api/auth?action=logout"
@@ -46,46 +47,6 @@ function initials(name) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-}
-
-function showPage(pageName) {
-  document
-    .querySelectorAll(".page")
-    .forEach(function(page) {
-      page.classList.remove("active");
-    });
-
-  document
-    .getElementById(`${pageName}Page`)
-    ?.classList.add("active");
-
-  document
-    .querySelectorAll(".side-link")
-    .forEach(function(link) {
-      link.classList.toggle(
-        "active",
-        link.dataset.page === pageName
-      );
-    });
-
-  const topbarTitle =
-    document.getElementById("topbarTitle");
-
-  if (topbarTitle) {
-    topbarTitle.textContent =
-      pageName.charAt(0).toUpperCase() +
-      pageName.slice(1);
-  }
-
-  document
-    .getElementById("sidebar")
-    ?.classList.remove("open");
-}
-
-function toggleSidebar() {
-  document
-    .getElementById("sidebar")
-    ?.classList.toggle("open");
 }
 
 async function loadUsers() {
@@ -312,14 +273,14 @@ function renderOverviewUsers() {
               <div class="preview-row">
                 <div>
                   <strong>
-                    ${fullName(user)}
+                    ${escapeHtml(fullName(user))}
                   </strong>
 
                   <p class="muted small">
-                    ${user.type}
+                    ${escapeHtml(user.type)}
                     ${
                       user.position
-                        ? ` · ${user.position}`
+                        ? ` · ${escapeHtml(user.position)}`
                         : ""
                     }
                   </p>
@@ -369,15 +330,15 @@ function renderOverviewInquiries() {
               <div class="preview-row">
                 <div>
                   <strong>
-                    ${inquiry.firstName || ""}
-                    ${inquiry.lastName || ""}
+                    ${escapeHtml(inquiry.firstName || "")}
+                    ${escapeHtml(inquiry.lastName || "")}
                   </strong>
 
                   <p class="muted small">
-                    ${inquiry.role || ""}
+                    ${escapeHtml(inquiry.role || "")}
                     ${
                       inquiry.position
-                        ? ` · ${inquiry.position}`
+                        ? ` · ${escapeHtml(inquiry.position)}`
                         : ""
                     }
                   </p>
@@ -525,17 +486,17 @@ function renderUserWorkspace() {
                 onclick="selectUser('${user.id}')"
               >
                 <div class="avatar">
-                  ${initials(fullName(user))}
+                  ${escapeHtml(initials(fullName(user)))}
                 </div>
 
                 <div>
                   <strong>
-                    ${fullName(user)}
+                    ${escapeHtml(fullName(user))}
                   </strong>
 
                   <p class="muted small">
-                    ${user.type} ·
-                    ${user.email || ""}
+                    ${escapeHtml(user.type)} ·
+                    ${escapeHtml(user.email || "")}
                   </p>
                 </div>
 
@@ -623,7 +584,145 @@ function selectUser(id) {
     )
     .classList.remove("hidden");
 
+  renderEliteProspectsAdminSection(user);
   renderUserWorkspace();
+}
+
+function renderEliteProspectsAdminSection(user) {
+  const section =
+    document.getElementById(
+      "eliteProspectsAdminSection"
+    );
+
+  const body =
+    document.getElementById(
+      "eliteProspectsAdminBody"
+    );
+
+  if (!section || !body) {
+    return;
+  }
+
+  if (!user || user.type !== "Player") {
+    section.classList.add("hidden");
+    return;
+  }
+
+  section.classList.remove("hidden");
+
+  if (!user.eliteProspects) {
+    body.innerHTML = `<p>No Elite Prospects profile linked.</p>`;
+    return;
+  }
+
+  const epData = user.epData || null;
+  const epSync = user.epSync || null;
+  const bio = epData?.bio || {};
+  const season = epData?.latestSeason || {};
+  const recentForm = epData?.recentForm || {};
+  const context = epData?.currentContext || {};
+
+  const bioLine = [
+    bio.fullName,
+    bio.position,
+    bio.shoots,
+    bio.height,
+    bio.weight
+  ].filter(Boolean).map(escapeHtml).join(" · ");
+
+  const contextLine = [
+    context.team,
+    context.league,
+    context.season
+  ].filter(Boolean).map(escapeHtml).join(" · ");
+
+  const seasonStatsLine = [
+    season.gp != null ? `${season.gp} GP` : null,
+    season.goals != null ? `${season.goals}G` : null,
+    season.assists != null ? `${season.assists}A` : null,
+    season.points != null ? `${season.points}PTS` : null,
+    season.pim != null ? `${season.pim} PIM` : null,
+    season.plusMinus != null ? `${season.plusMinus > 0 ? "+" : ""}${season.plusMinus}` : null
+  ].filter(Boolean).join(" ");
+
+  const seasonLine = [
+    season.team,
+    season.league,
+    season.season
+  ].filter(Boolean).map(escapeHtml).join(" · ");
+
+  const recentFormStatsLine = [
+    recentForm.gp != null ? `${recentForm.gp} GP` : null,
+    recentForm.goals != null ? `${recentForm.goals}G` : null,
+    recentForm.assists != null ? `${recentForm.assists}A` : null,
+    recentForm.points != null ? `${recentForm.points}PTS` : null,
+    recentForm.plusMinus != null ? `${recentForm.plusMinus > 0 ? "+" : ""}${recentForm.plusMinus}` : null
+  ].filter(Boolean).join(" ");
+
+  const lastUpdated =
+    epSync?.lastSuccessfulAt
+      ? new Date(epSync.lastSuccessfulAt).toLocaleString()
+      : "Never";
+
+  const status =
+    epSync?.status === "success" ? "Synced" :
+    epSync?.status === "error" ? "Sync failed" :
+    "Not synced";
+
+  body.innerHTML = `
+    <p><a class="text-button" href="${escapeHtml(user.eliteProspects)}" target="_blank" rel="noopener noreferrer">View Elite Prospects Profile</a></p>
+    ${bioLine ? `<p>${bioLine}</p>` : `<p>No biography data yet.</p>`}
+    ${contextLine ? `<p>${contextLine}</p>` : ""}
+    ${seasonLine ? `<p><strong>Latest Season:</strong> ${seasonLine}${seasonStatsLine ? ` — ${escapeHtml(seasonStatsLine)}` : ""}</p>` : `<p>No full season totals available.</p>`}
+    ${recentFormStatsLine ? `<p><strong>Last ${escapeHtml(String(recentForm.spanGames))} Games:</strong> ${escapeHtml(recentFormStatsLine)}</p>` : ""}
+    <p>Last updated: ${escapeHtml(lastUpdated)} · Status: ${escapeHtml(status)}</p>
+  `;
+}
+
+async function refreshEliteProspects() {
+  if (!selectedUserId) {
+    alert("Select a player first.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      ADMIN_API.refreshEliteProspects,
+      {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId: selectedUserId
+        })
+      }
+    );
+
+    const data =
+      await readApiResponse(response);
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        data.message ||
+        "Failed to refresh Elite Prospects data."
+      );
+    }
+
+    await loadUsers();
+    selectUser(selectedUserId);
+
+    alert("Elite Prospects data refreshed.");
+  } catch (error) {
+    console.error(
+      "Refresh Elite Prospects error:",
+      error
+    );
+
+    alert(error.message);
+  }
 }
 
 function resetUserForm() {
@@ -647,6 +746,7 @@ function resetUserForm() {
     )
     .classList.add("hidden");
 
+  renderEliteProspectsAdminSection(null);
   renderUserWorkspace();
 }
 
@@ -900,35 +1000,35 @@ function renderInquiryWorkspace() {
             return `
               <article class="card inquiry-item">
                 <strong>
-                  ${inquiry.firstName || ""}
-                  ${inquiry.lastName || ""}
+                  ${escapeHtml(inquiry.firstName || "")}
+                  ${escapeHtml(inquiry.lastName || "")}
                 </strong>
 
                 <p class="muted small">
-                  ${inquiry.role || ""}
+                  ${escapeHtml(inquiry.role || "")}
                   ${
                     inquiry.position
-                      ? ` · ${inquiry.position}`
+                      ? ` · ${escapeHtml(inquiry.position)}`
                       : ""
                   }
                   ${
                     inquiry.birthYear
-                      ? ` · ${inquiry.birthYear}`
+                      ? ` · ${escapeHtml(inquiry.birthYear)}`
                       : ""
                   }
                 </p>
 
                 <p class="muted small">
-                  ${inquiry.email || ""}
+                  ${escapeHtml(inquiry.email || "")}
                   ${
                     inquiry.phoneNumber
-                      ? ` · ${inquiry.phoneNumber}`
+                      ? ` · ${escapeHtml(inquiry.phoneNumber)}`
                       : ""
                   }
                 </p>
 
                 <p class="muted small">
-                  ${inquiry.goals || ""}
+                  ${escapeHtml(inquiry.goals || "")}
                 </p>
 
                 <div class="action-row">
@@ -1093,7 +1193,7 @@ function fillSelects() {
       .map(function(user) {
         return `
           <option value="${user.id}">
-            ${fullName(user)} · ${user.type}
+            ${escapeHtml(fullName(user))} · ${escapeHtml(user.type)}
           </option>
         `;
       })
@@ -1167,11 +1267,11 @@ function renderFiles() {
             return `
               <div class="file-item">
                 <strong>
-                  ${fileName}
+                  ${escapeHtml(fileName)}
                 </strong>
 
                 <p class="muted small">
-                  Assigned to ${item.user}
+                  Assigned to ${escapeHtml(item.user)}
                 </p>
 
                 <button
@@ -1620,27 +1720,27 @@ function renderDatabase() {
           return `
             <div class="database-record">
               <strong>
-                ${fullName(user)}
+                ${escapeHtml(fullName(user))}
               </strong>
 
               <p class="muted small">
-                ${user.type}
+                ${escapeHtml(user.type)}
                 ${
                   user.position
-                    ? ` · ${user.position}`
+                    ? ` · ${escapeHtml(user.position)}`
                     : ""
                 }
                 ${
                   user.birthYear
-                    ? ` · ${user.birthYear}`
+                    ? ` · ${escapeHtml(user.birthYear)}`
                     : ""
                 }
               </p>
 
               <p class="muted small">
-                ${user.email || ""}
+                ${escapeHtml(user.email || "")}
                 ·
-                ${user.phone || "No phone"}
+                ${escapeHtml(user.phone || "No phone")}
               </p>
 
               <button
@@ -1666,21 +1766,21 @@ function renderDatabase() {
           return `
             <div class="database-record">
               <strong>
-                ${inquiry.firstName || ""}
-                ${inquiry.lastName || ""}
+                ${escapeHtml(inquiry.firstName || "")}
+                ${escapeHtml(inquiry.lastName || "")}
               </strong>
 
               <p class="muted small">
-                ${inquiry.role || ""}
+                ${escapeHtml(inquiry.role || "")}
                 ${
                   inquiry.position
-                    ? ` · ${inquiry.position}`
+                    ? ` · ${escapeHtml(inquiry.position)}`
                     : ""
                 }
               </p>
 
               <p class="muted small">
-                ${inquiry.email || ""}
+                ${escapeHtml(inquiry.email || "")}
               </p>
 
               <button
@@ -1710,11 +1810,11 @@ function renderDatabase() {
           return `
             <div class="database-record">
               <strong>
-                ${fileName}
+                ${escapeHtml(fileName)}
               </strong>
 
               <p class="muted small">
-                Assigned to ${item.user}
+                Assigned to ${escapeHtml(item.user)}
               </p>
 
               <button
@@ -1737,17 +1837,17 @@ function renderDatabase() {
           return `
             <div class="database-record">
               <strong>
-                ${message.to || "Unknown user"}
+                ${escapeHtml(message.to || "Unknown user")}
               </strong>
 
               <p class="muted small">
-                ${message.type || "Message"}
+                ${escapeHtml(message.type || "Message")}
                 ·
-                ${message.time || ""}
+                ${escapeHtml(message.time || "")}
               </p>
 
               <p class="muted small">
-                ${message.text || ""}
+                ${escapeHtml(message.text || "")}
               </p>
             </div>
           `;
@@ -1789,17 +1889,17 @@ function renderMessages() {
             return `
               <div class="message-item">
                 <strong>
-                  ${message.to || "Unknown user"}
+                  ${escapeHtml(message.to || "Unknown user")}
                 </strong>
 
                 <p class="muted small">
-                  ${message.type || "Message"}
+                  ${escapeHtml(message.type || "Message")}
                   ·
-                  ${message.time || ""}
+                  ${escapeHtml(message.time || "")}
                 </p>
 
                 <p class="muted small">
-                  ${message.text || ""}
+                  ${escapeHtml(message.text || "")}
                 </p>
               </div>
             `;
