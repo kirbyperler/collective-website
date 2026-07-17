@@ -88,10 +88,15 @@ function toggleSidebar() {
     ?.classList.toggle("open");
 }
 
-async function loadUsers() {
+// Shared loader for the admin collections (users, inquiries, messages).
+// Each collection differs only in its endpoint, the response key that holds
+// the array, how individual records are normalized, and its status messages;
+// everything else (fetch, JSON parsing, ok-check, re-render, error alert) is
+// identical, so it lives here once.
+async function loadCollection(config) {
   try {
     const response = await fetch(
-      ADMIN_API.users,
+      config.url,
       {
         method: "GET",
         credentials: "same-origin"
@@ -105,17 +110,33 @@ async function loadUsers() {
       throw new Error(
         data.error ||
         data.message ||
-        "Failed to load users."
+        config.loadErrorMessage
       );
     }
 
-    const userRecords = Array.isArray(data)
+    const records = Array.isArray(data)
       ? data
-      : Array.isArray(data.users)
-        ? data.users
+      : Array.isArray(data[config.listKey])
+        ? data[config.listKey]
         : [];
 
-    users = userRecords.map(function(user) {
+    config.onLoaded(records.map(config.mapItem));
+
+    renderEverything();
+  } catch (error) {
+    console.error(config.logLabel, error);
+
+    alert(error.message);
+  }
+}
+
+async function loadUsers() {
+  return loadCollection({
+    url: ADMIN_API.users,
+    listKey: "users",
+    loadErrorMessage: "Failed to load users.",
+    logLabel: "Load users error:",
+    mapItem: function(user) {
       return {
         ...user,
         id: String(user._id || user.id),
@@ -129,132 +150,68 @@ async function loadUsers() {
           ? user.files
           : []
       };
-    });
+    },
+    onLoaded: function(mappedUsers) {
+      users = mappedUsers;
 
-    const selectedUserStillExists =
-      users.some(function(user) {
-        return user.id === selectedUserId;
-      });
+      const selectedUserStillExists =
+        users.some(function(user) {
+          return user.id === selectedUserId;
+        });
 
-    if (!selectedUserStillExists) {
-      selectedUserId = null;
+      if (!selectedUserStillExists) {
+        selectedUserId = null;
+      }
     }
-
-    renderEverything();
-  } catch (error) {
-    console.error(
-      "Load users error:",
-      error
-    );
-
-    alert(error.message);
-  }
+  });
 }
 
 async function loadInquiries() {
-  try {
-    const response = await fetch(
-      ADMIN_API.inquiries,
-      {
-        method: "GET",
-        credentials: "same-origin"
-      }
-    );
-
-    const data =
-      await readApiResponse(response);
-
-    if (!response.ok) {
-      throw new Error(
-        data.error ||
-        data.message ||
-        "Failed to load inquiries."
-      );
+  return loadCollection({
+    url: ADMIN_API.inquiries,
+    listKey: "inquiries",
+    loadErrorMessage: "Failed to load inquiries.",
+    logLabel: "Load inquiries error:",
+    mapItem: function(inquiry) {
+      return {
+        ...inquiry,
+        id: String(
+          inquiry._id || inquiry.id
+        )
+      };
+    },
+    onLoaded: function(mappedInquiries) {
+      inquiries = mappedInquiries;
     }
-
-    const inquiryRecords =
-      Array.isArray(data)
-        ? data
-        : Array.isArray(data.inquiries)
-          ? data.inquiries
-          : [];
-
-    inquiries =
-      inquiryRecords.map(function(inquiry) {
-        return {
-          ...inquiry,
-          id: String(
-            inquiry._id || inquiry.id
-          )
-        };
-      });
-
-    renderEverything();
-  } catch (error) {
-    console.error(
-      "Load inquiries error:",
-      error
-    );
-
-    alert(error.message);
-  }
+  });
 }
 
 async function loadMessages() {
-  try {
-    const response = await fetch(
-      ADMIN_API.messages,
-      {
-        method: "GET",
-        credentials: "same-origin"
-      }
-    );
-
-    const data =
-      await readApiResponse(response);
-
-    if (!response.ok) {
-      throw new Error(
-        data.error ||
-        data.message ||
-        "Failed to load messages."
-      );
+  return loadCollection({
+    url: ADMIN_API.messages,
+    listKey: "messages",
+    loadErrorMessage: "Failed to load messages.",
+    logLabel: "Load messages error:",
+    mapItem: function(message) {
+      return {
+        ...message,
+        id: String(
+          message._id || message.id
+        ),
+        userId: String(
+          message.userId || ""
+        ),
+        time: message.createdAt
+          ? new Date(
+              message.createdAt
+            ).toLocaleString()
+          : ""
+      };
+    },
+    onLoaded: function(mappedMessages) {
+      messages = mappedMessages;
     }
-
-    const messageRecords =
-      Array.isArray(data)
-        ? data
-        : Array.isArray(data.messages)
-          ? data.messages
-          : [];
-
-    messages =
-      messageRecords.map(function(message) {
-        return {
-          ...message,
-          id: String(
-            message._id || message.id
-          ),
-          userId: String(
-            message.userId || ""
-          ),
-          time: message.createdAt
-            ? new Date(
-                message.createdAt
-              ).toLocaleString()
-            : ""
-        };
-      });
-
-    renderEverything();
-  } catch (error) {
-    console.error(
-      "Load messages error:",
-      error
-    );
-
-    alert(error.message);
-  }
+  });
 }
 
 function filteredUsers(inputId) {

@@ -118,6 +118,26 @@ function serializeFile(file) {
   };
 }
 
+// Replace any character that is not safe for a blob key with a hyphen.
+function sanitizeFilename(name) {
+  return name.replace(
+    /[^a-zA-Z0-9._-]/g,
+    "-"
+  );
+}
+
+// Best-effort blob removal: a failed delete is logged but never aborts the
+// request (the database record is the source of truth for what is visible).
+async function safeDeleteBlob(pathname, errorLabel) {
+  if (!pathname) {
+    return;
+  }
+
+  await del(pathname).catch(function(error) {
+    console.error(errorLabel, error);
+  });
+}
+
 async function avatarRoute(
   req,
   res,
@@ -176,16 +196,10 @@ async function avatarRoute(
   }
 
   if (req.method === "DELETE") {
-    if (player.avatarPathname) {
-      await del(
-        player.avatarPathname
-      ).catch(function(error) {
-        console.error(
-          "Old avatar deletion error:",
-          error
-        );
-      });
-    }
+    await safeDeleteBlob(
+      player.avatarPathname,
+      "Old avatar deletion error:"
+    );
 
     await users.updateOne(
       {
@@ -253,10 +267,7 @@ async function avatarRoute(
     );
 
   const safeName =
-    originalName.replace(
-      /[^a-zA-Z0-9._-]/g,
-      "-"
-    );
+    sanitizeFilename(originalName);
 
   const blob =
     await put(
@@ -273,16 +284,10 @@ async function avatarRoute(
       }
     );
 
-  if (player.avatarPathname) {
-    await del(
-      player.avatarPathname
-    ).catch(function(error) {
-      console.error(
-        "Old avatar deletion error:",
-        error
-      );
-    });
-  }
+  await safeDeleteBlob(
+    player.avatarPathname,
+    "Old avatar deletion error:"
+  );
 
   await users.updateOne(
     {
@@ -459,10 +464,7 @@ async function fileRoute(
       );
 
     const safeName =
-      name.replace(
-        /[^a-zA-Z0-9._-]/g,
-        "-"
-      );
+      sanitizeFilename(name);
 
     const mimeType =
       uploaded.mimetype ||
@@ -581,16 +583,10 @@ async function fileRoute(
     });
   }
 
-  if (file.pathname) {
-    await del(
-      file.pathname
-    ).catch(function(error) {
-      console.error(
-        "Blob deletion error:",
-        error
-      );
-    });
-  }
+  await safeDeleteBlob(
+    file.pathname,
+    "Blob deletion error:"
+  );
 
   await collection.deleteOne(
     query

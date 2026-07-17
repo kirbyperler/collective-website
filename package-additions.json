@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "@vercel/blob": "latest",
-    "bcryptjs": "latest",
-    "formidable": "latest",
-    "mongodb": "latest",
-    "resend": "latest"
-  }
-}
