@@ -1,7 +1,8 @@
 const {
   getDb,
   toObjectId,
-  serialize
+  serialize,
+  getAvatarMap
 } = require("../lib/db");
 
 const {
@@ -42,17 +43,6 @@ function formatPlayer(player) {
       player.currentTeam ||
       player.team ||
       "",
-
-    shoots:
-      player.shoots ||
-      player.shot ||
-      "",
-
-    height:
-      player.height || "",
-
-    weight:
-      player.weight || "",
 
     careerStatus:
       player.careerStatus ||
@@ -202,45 +192,6 @@ async function meRoute(
       cleanText(
         body.currentTeam,
         150
-      );
-  }
-
-  if (
-    Object.prototype.hasOwnProperty.call(
-      body,
-      "shoots"
-    )
-  ) {
-    updates.shoots =
-      cleanText(
-        body.shoots,
-        30
-      );
-  }
-
-  if (
-    Object.prototype.hasOwnProperty.call(
-      body,
-      "height"
-    )
-  ) {
-    updates.height =
-      cleanText(
-        body.height,
-        30
-      );
-  }
-
-  if (
-    Object.prototype.hasOwnProperty.call(
-      body,
-      "weight"
-    )
-  ) {
-    updates.weight =
-      cleanText(
-        body.weight,
-        30
       );
   }
 
@@ -401,7 +352,8 @@ async function contactsRoute(
         lastName: 1,
         type: 1,
         role: 1,
-        email: 1
+        email: 1,
+        avatarUrl: 1
       })
       .sort({
         type: 1,
@@ -420,7 +372,10 @@ async function contactsRoute(
 
         role:
           item.role ||
-          item.type
+          item.type,
+
+        avatarUrl:
+          item.avatarUrl || ""
       };
     });
 
@@ -496,6 +451,23 @@ async function messagesRoute(
         })
         .toArray();
 
+    const otherPartyIds =
+      records.map(function(record) {
+        const senderIsPlayer =
+          String(record.senderId || "") ===
+          String(playerId);
+
+        return senderIsPlayer
+          ? record.recipientId
+          : record.senderId;
+      });
+
+    const avatarMap =
+      await getAvatarMap(
+        db,
+        otherPartyIds
+      );
+
     const formattedMessages =
       records.map(function(record) {
         const senderIsPlayer =
@@ -504,13 +476,25 @@ async function messagesRoute(
           ) ===
           String(playerId);
 
+        const otherPartyId =
+          senderIsPlayer
+            ? record.recipientId
+            : record.senderId;
+
         return {
           ...serialize(record),
 
           direction:
             senderIsPlayer
               ? "sent"
-              : "received"
+              : "received",
+
+          avatarUrl:
+            (otherPartyId &&
+              avatarMap.get(
+                String(otherPartyId)
+              )?.avatarUrl) ||
+            ""
         };
       });
 
@@ -906,9 +890,24 @@ async function progressRoute(
       })
       .toArray();
 
+  const categories =
+    await db
+      .collection(
+        "progressCategories"
+      )
+      .find({})
+      .sort({
+        order: 1,
+        createdAt: 1
+      })
+      .toArray();
+
   return res.status(200).json({
     ratings:
-      ratings.map(serialize)
+      ratings.map(serialize),
+
+    categories:
+      categories.map(serialize)
   });
 }
 

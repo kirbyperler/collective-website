@@ -12,8 +12,12 @@ const ADMIN_API = {
 let users = [];
 let selectedUserId = null;
 
+let progressCategories = [];
+let playerProgressRatings = [];
+
 let inquiries = [];
 let messages = [];
+let files = [];
 
 let activeDatabaseFilter = "Users";
 
@@ -35,18 +39,6 @@ async function readApiResponse(response) {
 
 function fullName(user) {
   return `${user.firstName || ""} ${user.lastName || ""}`.trim();
-}
-
-function initials(name) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .map(function(part) {
-      return part[0];
-    })
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 }
 
 async function loadUsers() {
@@ -85,10 +77,7 @@ async function loadUsers() {
         position: user.position || "",
         eliteProspects:
           user.eliteProspects || "",
-        phone: user.phone || "",
-        files: Array.isArray(user.files)
-          ? user.files
-          : []
+        phone: user.phone || ""
       };
     });
 
@@ -211,6 +200,43 @@ async function loadMessages() {
   } catch (error) {
     console.error(
       "Load messages error:",
+      error
+    );
+
+    alert(error.message);
+  }
+}
+
+async function loadFiles() {
+  try {
+    const response = await fetch(
+      ADMIN_API.files,
+      {
+        method: "GET",
+        credentials: "same-origin"
+      }
+    );
+
+    const data =
+      await readApiResponse(response);
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        data.message ||
+        "Failed to load files."
+      );
+    }
+
+    files =
+      Array.isArray(data.files)
+        ? data.files
+        : [];
+
+    renderEverything();
+  } catch (error) {
+    console.error(
+      "Load files error:",
       error
     );
 
@@ -377,18 +403,7 @@ function renderMetrics() {
       return user.type === "Advisor";
     }).length;
 
-  const fileTotal =
-    users.reduce(
-      function(total, user) {
-        return (
-          total +
-          (Array.isArray(user.files)
-            ? user.files.length
-            : 0)
-        );
-      },
-      0
-    );
+  const fileTotal = files.length;
 
   const metrics = [
     ["Users", users.length],
@@ -585,6 +600,7 @@ function selectUser(id) {
     .classList.remove("hidden");
 
   renderEliteProspectsAdminSection(user);
+  renderProgressAdminSection(user);
   renderUserWorkspace();
 }
 
@@ -679,6 +695,290 @@ function renderEliteProspectsAdminSection(user) {
   `;
 }
 
+async function loadProgressCategories() {
+  try {
+    const response = await fetch(
+      `${ADMIN_API.progress}&resource=categories`,
+      { method: "GET", credentials: "same-origin" }
+    );
+
+    const data = await readApiResponse(response);
+
+    if (!response.ok) {
+      throw new Error(data.error || data.message || "Failed to load progress categories.");
+    }
+
+    progressCategories = Array.isArray(data.categories) ? data.categories : [];
+  } catch (error) {
+    console.error("Load progress categories error:", error);
+    progressCategories = [];
+  }
+}
+
+async function loadPlayerProgress(playerId) {
+  try {
+    const response = await fetch(
+      `${ADMIN_API.progress}&playerId=${encodeURIComponent(playerId)}`,
+      { method: "GET", credentials: "same-origin" }
+    );
+
+    const data = await readApiResponse(response);
+
+    if (!response.ok) {
+      throw new Error(data.error || data.message || "Failed to load player progress.");
+    }
+
+    playerProgressRatings = Array.isArray(data.ratings) ? data.ratings : [];
+  } catch (error) {
+    console.error("Load player progress error:", error);
+    playerProgressRatings = [];
+  }
+}
+
+function latestRatingForCategory(categoryName) {
+  return playerProgressRatings
+    .filter(function(item) {
+      return item.category === categoryName;
+    })
+    .sort(function(a, b) {
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    })[0] || null;
+}
+
+async function renderProgressAdminSection(user) {
+  const section = document.getElementById("progressAdminSection");
+  if (!section) return;
+
+  if (!user || user.type !== "Player") {
+    section.classList.add("hidden");
+    return;
+  }
+
+  section.classList.remove("hidden");
+
+  await Promise.all([
+    loadProgressCategories(),
+    loadPlayerProgress(user.id)
+  ]);
+
+  renderProgressCategoryManager();
+  renderProgressRatingEditor();
+}
+
+function renderProgressCategoryManager() {
+  const manager = document.getElementById("progressCategoryManager");
+  if (!manager) return;
+
+  const sorted = [...progressCategories].sort(function(a, b) {
+    return (a.order ?? 0) - (b.order ?? 0);
+  });
+
+  manager.innerHTML =
+    sorted.length
+      ? sorted
+          .map(function(category, index) {
+            const id = category.id || category._id || "";
+
+            return `
+              <div class="category-row">
+                <span>${escapeHtml(category.name)}</span>
+                <div class="action-row">
+                  <button class="text-button" type="button" ${index === 0 ? "disabled" : ""} onclick="moveProgressCategory('${escapeHtml(id)}', -1)">Up</button>
+                  <button class="text-button" type="button" ${index === sorted.length - 1 ? "disabled" : ""} onclick="moveProgressCategory('${escapeHtml(id)}', 1)">Down</button>
+                  <button class="text-button" type="button" onclick="renameProgressCategory('${escapeHtml(id)}', '${escapeHtml(category.name).replaceAll("'", "\\'")}')">Rename</button>
+                  <button class="text-button" type="button" onclick="deleteProgressCategory('${escapeHtml(id)}')">Delete</button>
+                </div>
+              </div>
+            `;
+          })
+          .join("")
+      : `<p class="muted small">No categories yet. Add one below.</p>`;
+}
+
+function renderProgressRatingEditor() {
+  const editor = document.getElementById("progressRatingEditor");
+  if (!editor || !selectedUserId) return;
+
+  const sorted = [...progressCategories].sort(function(a, b) {
+    return (a.order ?? 0) - (b.order ?? 0);
+  });
+
+  editor.innerHTML =
+    sorted.length
+      ? sorted
+          .map(function(category) {
+            const latest = latestRatingForCategory(category.name);
+            const safeName = escapeHtml(category.name).replaceAll("'", "\\'");
+
+            return `
+              <div class="form-group progress-rating-row">
+                <label class="field-label">${escapeHtml(category.name)}</label>
+                <div class="form-row">
+                  <input class="field" type="number" min="0" max="100" id="rating-${escapeHtml(category.id || category._id)}" value="${latest ? Math.round(latest.rating) : ""}" placeholder="0-100" />
+                </div>
+                <textarea class="field" id="note-${escapeHtml(category.id || category._id)}" placeholder="Optional note...">${escapeHtml(latest?.note || "")}</textarea>
+                <button class="button secondary" type="button" onclick="savePlayerRating('${safeName}', '${escapeHtml(category.id || category._id)}')">Save Rating</button>
+                ${latest ? `<p class="muted small">Last updated ${escapeHtml(new Date(latest.createdAt).toLocaleDateString())} by ${escapeHtml(latest.evaluator || "Staff")}</p>` : ""}
+              </div>
+            `;
+          })
+          .join("")
+      : "";
+}
+
+async function addProgressCategory() {
+  const input = document.getElementById("newProgressCategoryName");
+  const name = input?.value.trim();
+  if (!name) {
+    alert("Enter a category name first.");
+    return;
+  }
+
+  try {
+    const response = await fetch(ADMIN_API.progress, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resource: "categories", name })
+    });
+
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.error || data.message || "Failed to add category.");
+
+    input.value = "";
+    await loadProgressCategories();
+    renderProgressCategoryManager();
+    renderProgressRatingEditor();
+  } catch (error) {
+    console.error("Add progress category error:", error);
+    alert(error.message);
+  }
+}
+
+async function renameProgressCategory(id, currentName) {
+  const name = prompt("Rename category:", currentName);
+  if (!name || !name.trim() || name.trim() === currentName) return;
+
+  try {
+    const response = await fetch(ADMIN_API.progress, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resource: "categories", id, name: name.trim() })
+    });
+
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.error || data.message || "Failed to rename category.");
+
+    await loadProgressCategories();
+    if (selectedUserId) await loadPlayerProgress(selectedUserId);
+    renderProgressCategoryManager();
+    renderProgressRatingEditor();
+  } catch (error) {
+    console.error("Rename progress category error:", error);
+    alert(error.message);
+  }
+}
+
+async function deleteProgressCategory(id) {
+  if (!confirm("Delete this category? Past ratings in this category are kept but it will no longer be offered.")) return;
+
+  try {
+    const response = await fetch(ADMIN_API.progress, {
+      method: "DELETE",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resource: "categories", id })
+    });
+
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.error || data.message || "Failed to delete category.");
+
+    await loadProgressCategories();
+    renderProgressCategoryManager();
+    renderProgressRatingEditor();
+  } catch (error) {
+    console.error("Delete progress category error:", error);
+    alert(error.message);
+  }
+}
+
+async function moveProgressCategory(id, direction) {
+  const sorted = [...progressCategories].sort(function(a, b) {
+    return (a.order ?? 0) - (b.order ?? 0);
+  });
+
+  const index = sorted.findIndex(function(category) {
+    return (category.id || category._id) === id;
+  });
+
+  const swapIndex = index + direction;
+  if (index === -1 || swapIndex < 0 || swapIndex >= sorted.length) return;
+
+  const current = sorted[index];
+  const swap = sorted[swapIndex];
+
+  try {
+    await Promise.all([
+      fetch(ADMIN_API.progress, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resource: "categories", id: current.id || current._id, order: swap.order })
+      }),
+      fetch(ADMIN_API.progress, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resource: "categories", id: swap.id || swap._id, order: current.order })
+      })
+    ]);
+
+    await loadProgressCategories();
+    renderProgressCategoryManager();
+    renderProgressRatingEditor();
+  } catch (error) {
+    console.error("Reorder progress category error:", error);
+    alert("Failed to reorder categories.");
+  }
+}
+
+async function savePlayerRating(categoryName, categoryId) {
+  if (!selectedUserId) return;
+
+  const ratingInput = document.getElementById(`rating-${categoryId}`);
+  const noteInput = document.getElementById(`note-${categoryId}`);
+  const rating = Number(ratingInput?.value);
+
+  if (!Number.isFinite(rating) || rating < 0 || rating > 100) {
+    alert("Enter a rating between 0 and 100.");
+    return;
+  }
+
+  try {
+    const response = await fetch(ADMIN_API.progress, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        playerId: selectedUserId,
+        category: categoryName,
+        rating,
+        note: noteInput?.value.trim() || ""
+      })
+    });
+
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.error || data.message || "Failed to save rating.");
+
+    await loadPlayerProgress(selectedUserId);
+    renderProgressRatingEditor();
+  } catch (error) {
+    console.error("Save player rating error:", error);
+    alert(error.message);
+  }
+}
+
 async function refreshEliteProspects() {
   if (!selectedUserId) {
     alert("Select a player first.");
@@ -747,6 +1047,7 @@ function resetUserForm() {
     .classList.add("hidden");
 
   renderEliteProspectsAdminSection(null);
+  renderProgressAdminSection(null);
   renderUserWorkspace();
 }
 
@@ -1200,8 +1501,6 @@ function fillSelects() {
       .join("");
 
   [
-    "overviewFileUser",
-    "fileWorkspaceUser",
     "overviewMessageRecipient",
     "messageRecipient"
   ].forEach(function(id) {
@@ -1214,6 +1513,39 @@ function fillSelects() {
         `
           <option value="">
             No users available
+          </option>
+        `;
+    }
+  });
+
+  // File uploads only support player accounts (see api/files.js).
+  const playerOptions =
+    users
+      .filter(function(user) {
+        return user.type === "Player";
+      })
+      .map(function(user) {
+        return `
+          <option value="${user.id}">
+            ${escapeHtml(fullName(user))}
+          </option>
+        `;
+      })
+      .join("");
+
+  [
+    "overviewFileUser",
+    "fileWorkspaceUser"
+  ].forEach(function(id) {
+    const element =
+      document.getElementById(id);
+
+    if (element) {
+      element.innerHTML =
+        playerOptions ||
+        `
+          <option value="">
+            No players available
           </option>
         `;
     }
@@ -1235,49 +1567,64 @@ function renderFiles() {
     return;
   }
 
-  const allFiles =
-    users.flatMap(function(user) {
-      return (
-        Array.isArray(user.files)
-          ? user.files
-          : []
-      ).map(function(file) {
-        return {
-          file,
-          user: fullName(user),
-          userId: user.id
-        };
-      });
-    });
-
   fileCountPill.textContent =
-    `${allFiles.length} files`;
+    `${files.length} files`;
 
   fileList.innerHTML =
-    allFiles.length
-      ? allFiles
-          .map(function(item) {
-            const fileName =
-              typeof item.file === "string"
-                ? item.file
-                : item.file.fileName ||
-                  item.file.name ||
-                  "File";
+    files.length
+      ? files
+          .map(function(file) {
+            const id =
+              file.id ||
+              file._id ||
+              "";
+
+            const owner =
+              users.find(function(user) {
+                return (
+                  user.id ===
+                  String(
+                    file.playerId ||
+                    file.ownerId ||
+                    ""
+                  )
+                );
+              });
 
             return `
               <div class="file-item">
-                <strong>
-                  ${escapeHtml(fileName)}
-                </strong>
+                <div class="file-head-info">
+                  ${avatarHtml(
+                    file.uploaderName ||
+                    file.uploadedByRole ||
+                    "Staff",
+                    file.uploaderAvatarUrl,
+                    "avatar-sm"
+                  )}
 
-                <p class="muted small">
-                  Assigned to ${escapeHtml(item.user)}
-                </p>
+                  <div>
+                    <strong>
+                      ${escapeHtml(
+                        file.name ||
+                        file.fileName ||
+                        "File"
+                      )}
+                    </strong>
+
+                    <p class="muted small">
+                      Assigned to ${escapeHtml(
+                        owner
+                          ? fullName(owner)
+                          : "Unknown player"
+                      )}
+                    </p>
+                  </div>
+                </div>
 
                 <button
                   class="text-button"
                   type="button"
-                  onclick="removeFile('${item.userId}', '${String(fileName).replaceAll("'", "\\'")}')"
+                  onclick="removeFile('${escapeHtml(id)}')"
                 >
                   Remove
                 </button>
@@ -1292,108 +1639,140 @@ function renderFiles() {
       `;
 }
 
-function addFileToUser(
-  userId,
-  fileName
+async function uploadFileForUser(
+  fileInputId,
+  userSelectId,
+  options = {}
 ) {
-  const user =
-    users.find(function(item) {
-      return item.id === userId;
-    });
+  const input =
+    document.getElementById(fileInputId);
 
-  if (!user || !fileName) {
-    return false;
+  const userSelect =
+    document.getElementById(userSelectId);
+
+  const file = input?.files?.[0];
+  const playerId = userSelect?.value;
+
+  if (!file || !playerId) {
+    alert("Choose a player and a file first.");
+    return;
   }
 
-  if (!Array.isArray(user.files)) {
-    user.files = [];
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("playerId", playerId);
+
+    const noteInput =
+      options.noteInputId
+        ? document.getElementById(options.noteInputId)
+        : null;
+
+    if (noteInput?.value.trim()) {
+      formData.append("note", noteInput.value.trim());
+    }
+
+    const response = await fetch(
+      ADMIN_API.files,
+      {
+        method: "POST",
+        credentials: "same-origin",
+        body: formData
+      }
+    );
+
+    const data =
+      await readApiResponse(response);
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        data.message ||
+        "Failed to upload file."
+      );
+    }
+
+    input.value = "";
+
+    if (noteInput) {
+      noteInput.value = "";
+    }
+
+    if (options.onSuccess) {
+      options.onSuccess();
+    }
+
+    await loadFiles();
+  } catch (error) {
+    console.error(
+      "Upload file error:",
+      error
+    );
+
+    alert(error.message);
   }
-
-  user.files.unshift(fileName);
-
-  renderEverything();
-
-  return true;
 }
 
 function uploadOverviewFile() {
-  const input =
-    document.getElementById(
-      "overviewFileInput"
-    );
-
-  const userSelect =
-    document.getElementById(
-      "overviewFileUser"
-    );
-
-  const fileName =
-    input?.files?.[0]?.name;
-
-  if (
-    addFileToUser(
-      userSelect?.value,
-      fileName
-    )
-  ) {
-    input.value = "";
-  }
+  uploadFileForUser(
+    "overviewFileInput",
+    "overviewFileUser"
+  );
 }
 
 function uploadWorkspaceFile(event) {
   event.preventDefault();
 
-  const input =
-    document.getElementById(
-      "fileWorkspaceInput"
-    );
-
-  const userSelect =
-    document.getElementById(
-      "fileWorkspaceUser"
-    );
-
-  const fileName =
-    input?.files?.[0]?.name;
-
-  if (
-    addFileToUser(
-      userSelect?.value,
-      fileName
-    )
-  ) {
-    event.target.reset();
-  }
+  uploadFileForUser(
+    "fileWorkspaceInput",
+    "fileWorkspaceUser",
+    {
+      noteInputId: "fileNote",
+      onSuccess: function() {
+        event.target.reset();
+      }
+    }
+  );
 }
 
-function removeFile(
-  userId,
-  fileName
-) {
-  const user =
-    users.find(function(item) {
-      return item.id === userId;
-    });
-
-  if (
-    !user ||
-    !confirm("Remove this file?")
-  ) {
+async function removeFile(id) {
+  if (!confirm("Remove this file?")) {
     return;
   }
 
-  user.files =
-    user.files.filter(function(file) {
-      const currentName =
-        typeof file === "string"
-          ? file
-          : file.fileName ||
-            file.name;
+  try {
+    const response = await fetch(
+      ADMIN_API.files,
+      {
+        method: "DELETE",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ id })
+      }
+    );
 
-      return currentName !== fileName;
-    });
+    const data =
+      await readApiResponse(response);
 
-  renderEverything();
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        data.message ||
+        "Failed to remove file."
+      );
+    }
+
+    await loadFiles();
+  } catch (error) {
+    console.error(
+      "Remove file error:",
+      error
+    );
+
+    alert(error.message);
+  }
 }
 
 async function addMessage(
@@ -1536,22 +1915,7 @@ function databaseMetrics() {
 
     ["Inquiries", inquiries.length],
 
-    [
-      "Files",
-      users.reduce(
-        function(total, user) {
-          return (
-            total +
-            (
-              Array.isArray(user.files)
-                ? user.files.length
-                : 0
-            )
-          );
-        },
-        0
-      )
-    ],
+    ["Files", files.length],
 
     ["Messages", messages.length],
 
@@ -1654,20 +2018,7 @@ function renderDatabase() {
   if (
     activeDatabaseFilter === "Files"
   ) {
-    records =
-      users.flatMap(function(user) {
-        return (
-          Array.isArray(user.files)
-            ? user.files
-            : []
-        ).map(function(file) {
-          return {
-            file,
-            user: fullName(user),
-            userId: user.id
-          };
-        });
-      });
+    records = files;
   }
 
   if (
@@ -1799,28 +2150,41 @@ function renderDatabase() {
   ) {
     results.innerHTML =
       records
-        .map(function(item) {
-          const fileName =
-            typeof item.file === "string"
-              ? item.file
-              : item.file.fileName ||
-                item.file.name ||
-                "File";
+        .map(function(file) {
+          const owner =
+            users.find(function(user) {
+              return (
+                user.id ===
+                String(
+                  file.playerId ||
+                  file.ownerId ||
+                  ""
+                )
+              );
+            });
 
           return `
             <div class="database-record">
               <strong>
-                ${escapeHtml(fileName)}
+                ${escapeHtml(
+                  file.name ||
+                  file.fileName ||
+                  "File"
+                )}
               </strong>
 
               <p class="muted small">
-                Assigned to ${escapeHtml(item.user)}
+                Assigned to ${escapeHtml(
+                  owner
+                    ? fullName(owner)
+                    : "Unknown player"
+                )}
               </p>
 
               <button
                 class="text-button"
                 type="button"
-                onclick="openUser('${item.userId}')"
+                onclick="openUser('${escapeHtml(owner ? owner.id : "")}')"
               >
                 Open user
               </button>
@@ -1836,9 +2200,17 @@ function renderDatabase() {
         .map(function(message) {
           return `
             <div class="database-record">
-              <strong>
-                ${escapeHtml(message.to || "Unknown user")}
-              </strong>
+              <div class="message-head-info">
+                ${avatarHtml(
+                  message.to || "Unknown user",
+                  message.avatarUrl,
+                  "avatar-sm"
+                )}
+
+                <strong>
+                  ${escapeHtml(message.to || "Unknown user")}
+                </strong>
+              </div>
 
               <p class="muted small">
                 ${escapeHtml(message.type || "Message")}
@@ -1888,15 +2260,25 @@ function renderMessages() {
           .map(function(message) {
             return `
               <div class="message-item">
-                <strong>
-                  ${escapeHtml(message.to || "Unknown user")}
-                </strong>
+                <div class="message-head-info">
+                  ${avatarHtml(
+                    message.to || "Unknown user",
+                    message.avatarUrl,
+                    "avatar-sm"
+                  )}
 
-                <p class="muted small">
-                  ${escapeHtml(message.type || "Message")}
-                  ·
-                  ${escapeHtml(message.time || "")}
-                </p>
+                  <div>
+                    <strong>
+                      ${escapeHtml(message.to || "Unknown user")}
+                    </strong>
+
+                    <p class="muted small">
+                      ${escapeHtml(message.type || "Message")}
+                      ·
+                      ${escapeHtml(message.time || "")}
+                    </p>
+                  </div>
+                </div>
 
                 <p class="muted small">
                   ${escapeHtml(message.text || "")}
@@ -1962,7 +2344,8 @@ async function initializeAdminDashboard() {
   await Promise.allSettled([
     loadUsers(),
     loadInquiries(),
-    loadMessages()
+    loadMessages(),
+    loadFiles()
   ]);
 
   renderEverything();

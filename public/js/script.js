@@ -76,7 +76,6 @@ if (inquiryForm) {
             firstName: formData.get("firstName"),
             lastName: formData.get("lastName"),
             role: formData.get("role"),
-            position: formData.get("position"),
             birthYear: formData.get("birthYear"),
             phoneNumber: formData.get("phoneNumber"),
             email: formData.get("email"),
@@ -123,52 +122,28 @@ if (inquiryForm) {
 }
 
 // ============================================
-// Show position only for players
+// Show Elite Prospects link only for players
 // ============================================
 
 const roleButtons = document.querySelectorAll('input[name="role"]');
-const positionContainer = document.getElementById("positionContainer");
-const positionButtons = document.querySelectorAll('input[name="position"]');
 const eliteProspectsContainer = document.getElementById("eliteProspectsContainer");
 const eliteProspectsInput = document.getElementById("eliteProspects");
 
-if (roleButtons.length && positionContainer && positionButtons.length) {
+if (roleButtons.length && eliteProspectsContainer) {
 
     roleButtons.forEach(function (roleButton) {
 
         roleButton.addEventListener("change", function () {
 
             if (roleButton.value === "player") {
-                positionContainer.style.display = "block";
-
-                positionButtons.forEach(function (positionButton) {
-                    positionButton.required = true;
-                    positionContainer.style.cssText = `
-                        display: flex;
-                        flex-direction: column;
-                        gap: 18px;
-                    `;
-                });
-
-                if (eliteProspectsContainer) {
-                    eliteProspectsContainer.style.display = "block";
-                }
+                eliteProspectsContainer.style.display = "block";
 
                 if (eliteProspectsInput) {
                     eliteProspectsInput.disabled = false;
                 }
 
             } else {
-                positionContainer.style.display = "none";
-
-                positionButtons.forEach(function (positionButton) {
-                    positionButton.required = false;
-                    positionButton.checked = false;
-                });
-
-                if (eliteProspectsContainer) {
-                    eliteProspectsContainer.style.display = "none";
-                }
+                eliteProspectsContainer.style.display = "none";
 
                 if (eliteProspectsInput) {
                     eliteProspectsInput.disabled = true;

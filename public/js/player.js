@@ -19,6 +19,7 @@ let programs = {
 
 let files = [];
 let progressRatings = [];
+let progressCategories = [];
 let contacts = [];
 
 const emptyPlayer = {
@@ -30,9 +31,6 @@ const emptyPlayer = {
   phone: "",
   position: "",
   currentTeam: "",
-  shoots: "",
-  height: "",
-  weight: "",
   careerStatus: "Youth",
   bio: "",
   avatarUrl: "",
@@ -305,8 +303,18 @@ async function loadDashboard() {
           ? progressResult.value
               .ratings
           : [];
+
+      progressCategories =
+        Array.isArray(
+          progressResult.value
+            ?.categories
+        )
+          ? progressResult.value
+              .categories
+          : [];
     } else {
       progressRatings = [];
+      progressCategories = [];
 
       console.error(
         "Progress failed:",
@@ -395,9 +403,6 @@ function fillProfileForm() {
     "birthYear",
     "position",
     "currentTeam",
-    "shoots",
-    "height",
-    "weight",
     "email",
     "phone",
     "careerStatus",
@@ -649,27 +654,6 @@ function renderOverview() {
           </strong>
         </div>
 
-        <div class="fact-box">
-          <span>Height</span>
-
-          <strong>
-            ${escapeHtml(
-              player.height ||
-              "—"
-            )}
-          </strong>
-        </div>
-
-        <div class="fact-box">
-          <span>Weight</span>
-
-          <strong>
-            ${escapeHtml(
-              player.weight ||
-              "—"
-            )}
-          </strong>
-        </div>
       </div>
     `;
   }
@@ -1124,7 +1108,20 @@ function latestRatingsByCategory(ratings) {
     }
   });
 
+  const categoryOrder = new Map(
+    progressCategories.map(function(item, index) {
+      return [item.name, item.order ?? index];
+    })
+  );
+
   return Array.from(map.values()).sort(function(a, b) {
+    const orderA = categoryOrder.has(a.category) ? categoryOrder.get(a.category) : Infinity;
+    const orderB = categoryOrder.has(b.category) ? categoryOrder.get(b.category) : Infinity;
+
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+
     return (b._time || 0) - (a._time || 0);
   });
 }
@@ -1446,21 +1443,34 @@ function renderMessages() {
                     "Collective"
                   }`;
 
+            const otherPartyName =
+              message.direction === "sent"
+                ? message.toName || "Staff"
+                : message.fromName || "Collective";
+
             return `
               <div class="message-item">
                 <div class="message-head">
-                  <div>
-                    <strong>
-                      ${escapeHtml(
-                        message.subject ||
-                        "Message"
-                      )}
-                    </strong>
+                  <div class="message-head-info">
+                    ${avatarHtml(
+                      otherPartyName,
+                      message.avatarUrl,
+                      "avatar-sm"
+                    )}
 
-                    <p class="muted small">
-                      ${escapeHtml(directionText)}
-                      ${date ? ` · ${escapeHtml(date)}` : ""}
-                    </p>
+                    <div>
+                      <strong>
+                        ${escapeHtml(
+                          message.subject ||
+                          "Message"
+                        )}
+                      </strong>
+
+                      <p class="muted small">
+                        ${escapeHtml(directionText)}
+                        ${date ? ` · ${escapeHtml(date)}` : ""}
+                      </p>
+                    </div>
                   </div>
 
                   <button
@@ -1597,21 +1607,31 @@ function renderFiles() {
                 </div>
 
                 <div class="file-head">
-                  <div>
-                    <strong>
-                      ${escapeHtml(
-                        file.name ||
-                        file.fileName ||
-                        "Untitled file"
-                      )}
-                    </strong>
+                  <div class="file-head-info">
+                    ${avatarHtml(
+                      file.uploaderName ||
+                      file.uploadedByRole ||
+                      "Staff",
+                      file.uploaderAvatarUrl,
+                      "avatar-sm"
+                    )}
 
-                    <p class="muted small">
-                      ${escapeHtml(
-                        file.category ||
-                        "File"
-                      )}
-                    </p>
+                    <div>
+                      <strong>
+                        ${escapeHtml(
+                          file.name ||
+                          file.fileName ||
+                          "Untitled file"
+                        )}
+                      </strong>
+
+                      <p class="muted small">
+                        ${escapeHtml(
+                          file.category ||
+                          "File"
+                        )}
+                      </p>
+                    </div>
                   </div>
 
                   <button
@@ -1675,9 +1695,6 @@ async function saveProfile(event) {
     "birthYear",
     "position",
     "currentTeam",
-    "shoots",
-    "height",
-    "weight",
     "email",
     "phone",
     "careerStatus",

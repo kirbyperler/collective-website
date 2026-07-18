@@ -34,3 +34,28 @@ function showPage(pageName) {
 function toggleSidebar() {
   document.getElementById("sidebar")?.classList.toggle("open");
 }
+
+function initials(name) {
+  return String(name || "")
+    .split(" ")
+    .filter(Boolean)
+    .map(function(part) {
+      return part[0];
+    })
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+// Renders a small circular avatar: the uploaded photo when one exists,
+// otherwise initials on a solid background so every sender/uploader still
+// reads as a distinct person.
+function avatarHtml(name, avatarUrl, sizeClass = "") {
+  const classes = ["avatar", sizeClass].filter(Boolean).join(" ");
+
+  if (avatarUrl) {
+    return `<img class="${classes} avatar-photo" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(name || "Avatar")}" />`;
+  }
+
+  return `<div class="${classes}">${escapeHtml(initials(name) || "?")}</div>`;
+}

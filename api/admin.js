@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const { Resend } = require("resend");
-const { getDb, toObjectId, serialize } = require("../lib/db");
+const { getDb, toObjectId, serialize, getAvatarMap } = require("../lib/db");
 const { requireAdmin, requireStaff } = require("../lib/auth");
 const { action, allowMethods, cleanText, escapeRegex } = require("../lib/http");
 const { fetchEliteProspectsData, isValidEliteProspectsUrl } = require("../lib/eliteProspects");
@@ -61,11 +61,18 @@ async function usersRoute(req, res, db) {
   return result.deletedCount ? res.status(200).json({ success: true }) : res.status(404).json({ error: "User not found." });
 }
 
-async function messagesRoute(req, res, db) {
+async function messagesRoute(req, res, db, session) {
   if (!allowMethods(req, res, ["GET", "POST", "DELETE"])) return;
   const messages = db.collection("messages");
   const users = db.collection("users");
-  if (req.method === "GET") return res.status(200).json((await messages.find({}).sort({ createdAt: -1 }).toArray()).map(serialize));
+  if (req.method === "GET") {
+    const records = await messages.find({}).sort({ createdAt: -1 }).toArray();
+    const avatarMap = await getAvatarMap(db, records.map(record => record.userId));
+    return res.status(200).json(records.map(record => ({
+      ...serialize(record),
+      avatarUrl: avatarMap.get(String(record.userId))?.avatarUrl || ""
+    })));
+  }
   if (req.method === "POST") {
     const userId = toObjectId(req.body?.userId || req.body?.recipientId);
     const text = cleanText(req.body?.text, 4000);
@@ -73,7 +80,7 @@ async function messagesRoute(req, res, db) {
     const user = await users.findOne({ _id: userId });
     if (!user) return res.status(404).json({ error: "User not found." });
     const toName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
-    const document = { userId, recipientId: userId, to: toName, toName, senderName: "Collective Admin", fromName: "Collective Admin", type: cleanText(req.body?.type, 100) || "Admin Notice", subject: cleanText(req.body?.subject, 150), text, read: false, deletedFor: [], createdAt: new Date() };
+    const document = { userId, recipientId: userId, senderId: toObjectId(session.userId), to: toName, toName, senderName: "Collective Admin", fromName: "Collective Admin", type: cleanText(req.body?.type, 100) || "Admin Notice", subject: cleanText(req.body?.subject, 150), text, read: false, deletedFor: [], createdAt: new Date() };
     const result = await messages.insertOne(document);
     return res.status(201).json({ message: "Message created successfully.", savedMessage: serialize({ ...document, _id: result.insertedId }) });
   }
@@ -83,8 +90,75 @@ async function messagesRoute(req, res, db) {
   return result.deletedCount ? res.status(200).json({ success: true }) : res.status(404).json({ error: "Message not found." });
 }
 
+const DEFAULT_PROGRESS_CATEGORIES = ["Skating", "Edge Work", "Hockey IQ", "Shooting", "Puck Skills"];
+
+async function ensureDefaultCategories(categories) {
+  const count = await categories.countDocuments({});
+  if (count > 0) return;
+  const now = new Date();
+  await categories.insertMany(DEFAULT_PROGRESS_CATEGORIES.map((name, index) => ({ name, order: index, createdAt: now, updatedAt: now })));
+}
+
+async function progressCategoriesRoute(req, res, db) {
+  const categories = db.collection("progressCategories");
+
+  if (req.method === "GET") {
+    await ensureDefaultCategories(categories);
+    const list = await categories.find({}).sort({ order: 1, createdAt: 1 }).toArray();
+    return res.status(200).json({ categories: list.map(serialize) });
+  }
+
+  if (req.method === "POST") {
+    const name = cleanText(req.body?.name, 100);
+    if (!name) return res.status(400).json({ error: "A category name is required." });
+    const highest = await categories.find({}).sort({ order: -1 }).limit(1).toArray();
+    const order = highest.length ? highest[0].order + 1 : 0;
+    const now = new Date();
+    const document = { name, order, createdAt: now, updatedAt: now };
+    const result = await categories.insertOne(document);
+    return res.status(201).json({ category: serialize({ ...document, _id: result.insertedId }) });
+  }
+
+  const id = toObjectId(req.body?.id);
+  if (!id) return res.status(400).json({ error: "A valid category ID is required." });
+
+  if (req.method === "PATCH") {
+    const existing = await categories.findOne({ _id: id });
+    if (!existing) return res.status(404).json({ error: "Category not found." });
+
+    const updates = { updatedAt: new Date() };
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "name")) {
+      const name = cleanText(req.body.name, 100);
+      if (!name) return res.status(400).json({ error: "A category name is required." });
+      updates.name = name;
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, "order")) {
+      const order = Number(req.body.order);
+      if (!Number.isFinite(order)) return res.status(400).json({ error: "Order must be a number." });
+      updates.order = order;
+    }
+
+    await categories.updateOne({ _id: id }, { $set: updates });
+
+    if (updates.name && updates.name !== existing.name) {
+      await db.collection("playerProgress").updateMany({ category: existing.name }, { $set: { category: updates.name } });
+    }
+
+    return res.status(200).json({ category: serialize({ ...existing, ...updates, _id: id }) });
+  }
+
+  const result = await categories.deleteOne({ _id: id });
+  return result.deletedCount ? res.status(200).json({ success: true }) : res.status(404).json({ error: "Category not found." });
+}
+
 async function progressRoute(req, res, db, session) {
-  if (!allowMethods(req, res, ["GET", "POST", "DELETE"])) return;
+  if (!allowMethods(req, res, ["GET", "POST", "PATCH", "DELETE"])) return;
+
+  const resource = cleanText(req.query?.resource || req.body?.resource, 30).toLowerCase();
+  if (resource === "categories") return progressCategoriesRoute(req, res, db);
+
+  if (req.method === "PATCH") return res.status(400).json({ error: "Ratings cannot be edited directly. Submit a new rating instead." });
+
   const collection = db.collection("playerProgress");
   const playerId = toObjectId(req.method === "GET" ? req.query?.playerId : req.body?.playerId);
   if (req.method === "GET") {
@@ -216,7 +290,7 @@ module.exports = async function handler(req, res) {
     if (!session) return;
     const db = await getDb();
     if (route === "users") return usersRoute(req, res, db);
-    if (route === "messages") return messagesRoute(req, res, db);
+    if (route === "messages") return messagesRoute(req, res, db, session);
     if (route === "progress") return progressRoute(req, res, db, session);
     if (route === "accept-inquiry") return acceptInquiry(req, res, db);
     if (route === "refresheliteprospects") return refreshEliteProspectsRoute(req, res, db);

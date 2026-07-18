@@ -2,7 +2,7 @@ const { put, del } = require("@vercel/blob");
 const { formidable } = require("formidable");
 const fs = require("node:fs/promises");
 
-const { getDb, toObjectId, serialize } = require("../lib/db");
+const { getDb, toObjectId, serialize, getAvatarMap } = require("../lib/db");
 const { getSession } = require("../lib/auth");
 const { action, allowMethods, cleanText, readJson } = require("../lib/http");
 
@@ -154,20 +154,35 @@ function serializeFile(file) {
 async function avatarRoute(req, res, db, session) {
   if (!allowMethods(req, res, ["GET", "POST", "DELETE"])) return;
 
-  if (!isPlayer(session) && !isAdmin(session)) {
-    return res.status(403).json({ error: "Forbidden." });
-  }
-
   const users = db.collection("users");
 
+  // Self-service avatar management is allowed for any authenticated role
+  // (player, admin, coach, advisor) — there is no player-assignment system,
+  // but managing one's own avatar needs no such system. Admins may
+  // additionally target any player account by id.
   async function loadOwnerPlayer(candidateRaw) {
-    const owner = await resolveOwner(db, session, candidateRaw);
-    if (owner.error) return owner;
-    const player =
-      owner.player ||
-      (await users.findOne({ _id: owner.ownerId, type: { $regex: /^player$/i } }));
-    if (!player) return { error: 404, message: "Player account not found." };
-    return { ownerId: owner.ownerId, player };
+    const selfId = toObjectId(session.userId);
+    if (!selfId) {
+      return { error: 401, message: "The session contains an invalid account ID." };
+    }
+
+    const targetingSelf =
+      !candidateRaw || String(toObjectId(candidateRaw) || "") === String(selfId);
+
+    if (!targetingSelf) {
+      if (!isAdmin(session)) {
+        return { error: 403, message: "You may only manage your own avatar." };
+      }
+      const ownerId = toObjectId(candidateRaw);
+      if (!ownerId) return { error: 400, message: "A valid player ID is required." };
+      const player = await users.findOne({ _id: ownerId, type: { $regex: /^player$/i } });
+      if (!player) return { error: 404, message: "Player account not found." };
+      return { ownerId, player };
+    }
+
+    const account = await users.findOne({ _id: selfId });
+    if (!account) return { error: 404, message: "Account not found." };
+    return { ownerId: selfId, player: account };
   }
 
   if (req.method === "GET") {
@@ -289,7 +304,14 @@ async function fileRoute(req, res, db, session) {
     // Admins with no candidate id see every file (preserves prior behavior).
 
     const records = await files.find(query).sort({ createdAt: -1 }).toArray();
-    return res.status(200).json({ files: records.map(serializeFile) });
+    const avatarMap = await getAvatarMap(db, records.map(record => record.uploadedBy));
+    return res.status(200).json({
+      files: records.map(record => ({
+        ...serializeFile(record),
+        uploaderAvatarUrl: avatarMap.get(String(record.uploadedBy))?.avatarUrl || "",
+        uploaderName: avatarMap.get(String(record.uploadedBy))?.name || ""
+      }))
+    });
   }
 
   if (req.method === "POST") {
