@@ -601,7 +601,35 @@ function selectUser(id) {
 
   renderEliteProspectsAdminSection(user);
   renderProgressAdminSection(user);
+
+  document
+    .getElementById("quickLinksSection")
+    ?.classList.remove("hidden");
+
   renderUserWorkspace();
+}
+
+function openFilesForSelectedUser() {
+  if (!selectedUserId) return;
+
+  showPage("files");
+
+  const select = document.getElementById("fileWorkspaceUser");
+  if (select) {
+    select.value = selectedUserId;
+  }
+}
+
+function openMessagesForSelectedUser() {
+  if (!selectedUserId) return;
+
+  showPage("messages");
+
+  const select = document.getElementById("messageRecipient");
+  if (select) {
+    select.value = selectedUserId;
+    select.dispatchEvent(new Event("change"));
+  }
 }
 
 function renderEliteProspectsAdminSection(user) {
@@ -1048,6 +1076,11 @@ function resetUserForm() {
 
   renderEliteProspectsAdminSection(null);
   renderProgressAdminSection(null);
+
+  document
+    .getElementById("quickLinksSection")
+    ?.classList.add("hidden");
+
   renderUserWorkspace();
 }
 
@@ -1298,39 +1331,60 @@ function renderInquiryWorkspace() {
     list.length
       ? list
           .map(function(inquiry) {
+            const name =
+              `${inquiry.firstName || ""} ${inquiry.lastName || ""}`.trim() ||
+              "Unnamed applicant";
+
             return `
               <article class="card inquiry-item">
-                <strong>
-                  ${escapeHtml(inquiry.firstName || "")}
-                  ${escapeHtml(inquiry.lastName || "")}
-                </strong>
+                <div class="message-head-info">
+                  ${avatarHtml(name, "", "avatar-sm")}
 
-                <p class="muted small">
-                  ${escapeHtml(inquiry.role || "")}
+                  <div>
+                    <strong>${escapeHtml(name)}</strong>
+                    <span class="badge badge-role">${escapeHtml(inquiry.role || "Applicant")}</span>
+                  </div>
+                </div>
+
+                <div class="info-grid">
+                  <div class="info-row">
+                    <span>Email</span>
+                    <strong>${escapeHtml(inquiry.email || "—")}</strong>
+                  </div>
+
+                  <div class="info-row">
+                    <span>Phone</span>
+                    <strong>${escapeHtml(inquiry.phoneNumber || "—")}</strong>
+                  </div>
+
                   ${
                     inquiry.position
-                      ? ` · ${escapeHtml(inquiry.position)}`
+                      ? `<div class="info-row"><span>Position</span><strong>${escapeHtml(inquiry.position)}</strong></div>`
                       : ""
                   }
+
                   ${
                     inquiry.birthYear
-                      ? ` · ${escapeHtml(inquiry.birthYear)}`
+                      ? `<div class="info-row"><span>Birth Year</span><strong>${escapeHtml(inquiry.birthYear)}</strong></div>`
                       : ""
                   }
-                </p>
 
-                <p class="muted small">
-                  ${escapeHtml(inquiry.email || "")}
-                  ${
-                    inquiry.phoneNumber
-                      ? ` · ${escapeHtml(inquiry.phoneNumber)}`
-                      : ""
-                  }
-                </p>
+                  <div class="info-row">
+                    <span>Submitted</span>
+                    <strong>${escapeHtml(formatShortDate(inquiry.createdAt) || "—")}</strong>
+                  </div>
+                </div>
 
-                <p class="muted small">
-                  ${escapeHtml(inquiry.goals || "")}
-                </p>
+                ${
+                  inquiry.eliteProspects
+                    ? `<a class="text-button" href="${escapeHtml(inquiry.eliteProspects)}" target="_blank" rel="noopener noreferrer">View Elite Prospects Profile</a>`
+                    : ""
+                }
+
+                <div>
+                  <p class="field-hint">Goals</p>
+                  <p class="muted small">${escapeHtml(inquiry.goals || "No goals provided.")}</p>
+                </div>
 
                 <div class="action-row">
                   <button
@@ -1342,11 +1396,11 @@ function renderInquiryWorkspace() {
                   </button>
 
                   <button
-                    class="button secondary"
+                    class="button danger"
                     type="button"
                     onclick="deleteInquiry('${inquiry.id}')"
                   >
-                    Delete
+                    Reject
                   </button>
                 </div>
               </article>
@@ -1354,7 +1408,7 @@ function renderInquiryWorkspace() {
           })
           .join("")
       : `
-        <p class="muted">
+        <p class="empty-state">
           No inquiries found.
         </p>
       `;
@@ -1552,6 +1606,20 @@ function fillSelects() {
   });
 }
 
+function updateRecipientPreview(selectId, previewId) {
+  const select = document.getElementById(selectId);
+  const preview = document.getElementById(previewId);
+  if (!select || !preview) return;
+
+  const user = users.find(function(item) {
+    return item.id === select.value;
+  });
+
+  preview.innerHTML = user
+    ? `Sending to <strong>${escapeHtml(fullName(user))}</strong> (${escapeHtml(user.type)})`
+    : `<span class="muted">Choose a recipient above.</span>`;
+}
+
 function renderFiles() {
   const fileCountPill =
     document.getElementById(
@@ -1612,29 +1680,55 @@ function renderFiles() {
                     </strong>
 
                     <p class="muted small">
-                      Assigned to ${escapeHtml(
+                      Assigned to <strong>${escapeHtml(
                         owner
                           ? fullName(owner)
                           : "Unknown player"
+                      )}</strong>
+                    </p>
+
+                    <p class="muted small">
+                      Uploaded by ${escapeHtml(
+                        file.uploaderName ||
+                        file.uploadedByRole ||
+                        "Staff"
                       )}
+                      ${
+                        formatShortDate(file.createdAt)
+                          ? ` · ${escapeHtml(formatShortDate(file.createdAt))}`
+                          : ""
+                      }
+                      ${
+                        formatFileSize(file.size)
+                          ? ` · ${escapeHtml(formatFileSize(file.size))}`
+                          : ""
+                      }
                     </p>
                   </div>
                 </div>
 
-                <button
-                  class="text-button"
-                  type="button"
-                  onclick="removeFile('${escapeHtml(id)}')"
-                >
-                  Remove
-                </button>
+                <div class="action-row">
+                  ${
+                    file.url
+                      ? `<a class="text-button" href="${escapeHtml(file.url)}" target="_blank" rel="noopener">Open</a>`
+                      : ""
+                  }
+
+                  <button
+                    class="text-button"
+                    type="button"
+                    onclick="removeFile('${escapeHtml(id)}')"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             `;
           })
           .join("")
       : `
-        <p class="muted small">
-          No files uploaded.
+        <p class="empty-state">
+          No files uploaded yet.
         </p>
       `;
 }
@@ -2198,17 +2292,27 @@ function renderDatabase() {
     results.innerHTML =
       records
         .map(function(message) {
+          const owner =
+            users.find(function(user) {
+              return user.id === String(message.userId || "");
+            });
+
+          const playerName =
+            owner
+              ? fullName(owner)
+              : message.to || "Unknown player";
+
           return `
             <div class="database-record">
               <div class="message-head-info">
                 ${avatarHtml(
-                  message.to || "Unknown user",
+                  playerName,
                   message.avatarUrl,
                   "avatar-sm"
                 )}
 
                 <strong>
-                  ${escapeHtml(message.to || "Unknown user")}
+                  ${escapeHtml(playerName)}
                 </strong>
               </div>
 
@@ -2258,21 +2362,45 @@ function renderMessages() {
     messages.length
       ? messages
           .map(function(message) {
+            const owner =
+              users.find(function(user) {
+                return user.id === String(message.userId || "");
+              });
+
+            const playerName =
+              owner
+                ? fullName(owner)
+                : message.to || "Unknown player";
+
+            const senderIsPlayer =
+              message.senderId
+                ? String(message.senderId) === String(message.userId)
+                : false;
+
+            const directionLabel =
+              senderIsPlayer
+                ? `From ${playerName}`
+                : `To ${playerName}`;
+
             return `
               <div class="message-item">
                 <div class="message-head-info">
                   ${avatarHtml(
-                    message.to || "Unknown user",
+                    playerName,
                     message.avatarUrl,
                     "avatar-sm"
                   )}
 
                   <div>
                     <strong>
-                      ${escapeHtml(message.to || "Unknown user")}
+                      ${escapeHtml(playerName)}
                     </strong>
 
+                    <span class="badge badge-role">Player</span>
+
                     <p class="muted small">
+                      ${escapeHtml(directionLabel)}
+                      ·
                       ${escapeHtml(message.type || "Message")}
                       ·
                       ${escapeHtml(message.time || "")}
@@ -2288,8 +2416,8 @@ function renderMessages() {
           })
           .join("")
       : `
-        <p class="muted small">
-          No messages yet.
+        <p class="empty-state">
+          No messages yet. Send one using the form on the left.
         </p>
       `;
 }
@@ -2301,6 +2429,8 @@ function renderEverything() {
   renderUserWorkspace();
   renderInquiryWorkspace();
   fillSelects();
+  updateRecipientPreview("overviewMessageRecipient", "overviewMessageRecipientPreview");
+  updateRecipientPreview("messageRecipient", "messageRecipientPreview");
   renderFiles();
   renderMessages();
   renderDatabase();

@@ -83,3 +83,21 @@
 .avatar-sm{width:28px;height:28px;font-size:11px}
 .message-head-info,.file-head-info{display:flex;align-items:center;gap:10px;min-width:0}
 
+/* READABILITY UTILITIES (shared patterns reused across sections) */
+.section-header{margin:18px 0 10px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim)}
+.section-header:first-child{margin-top:0;padding-top:0;border-top:0}
+.section-header .badge{margin-left:8px}
+.field-hint{margin-top:-3px;font-size:11px;color:var(--muted);line-height:1.4}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 9px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;border:1px solid var(--line);color:var(--dim);white-space:nowrap}
+.badge-synced{border-color:rgba(91,224,0,.4);background:rgba(91,224,0,.1);color:var(--green)}
+.badge-manual{border-color:rgba(214,47,42,.35);background:rgba(214,47,42,.08);color:#f0a09d}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 18px}
+.info-row{display:flex;flex-direction:column;gap:3px;min-width:0}
+.info-row span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.info-row strong{color:var(--cream);font-size:14px;font-weight:600;overflow-wrap:break-word}
+.empty-state{padding:26px 10px;text-align:center;color:var(--dim);font-size:13px;border:1px dashed var(--line);border-radius:10px}
+.readonly-field{opacity:.7;cursor:not-allowed !important;background:rgba(0,0,0,.5) !important}
+.badge-role{margin-left:6px}
+.message-item,.file-item{padding:14px}
+@media(max-width:800px){.info-grid,.ep-fact-grid{grid-template-columns:1fr 1fr}.stat-box-grid{grid-template-columns:repeat(3,1fr)}}
+

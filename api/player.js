@@ -494,6 +494,16 @@ async function messagesRoute(
               avatarMap.get(
                 String(otherPartyId)
               )?.avatarUrl) ||
+            "",
+
+          otherPartyRole:
+            (otherPartyId &&
+              avatarMap.get(
+                String(otherPartyId)
+              )?.role) ||
+            (senderIsPlayer
+              ? record.recipientRole
+              : "Admin") ||
             ""
         };
       });

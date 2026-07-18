@@ -1460,11 +1460,14 @@ function renderMessages() {
 
                     <div>
                       <strong>
-                        ${escapeHtml(
-                          message.subject ||
-                          "Message"
-                        )}
+                        ${escapeHtml(otherPartyName)}
                       </strong>
+
+                      ${
+                        message.otherPartyRole
+                          ? `<span class="badge badge-role">${escapeHtml(message.otherPartyRole)}</span>`
+                          : ""
+                      }
 
                       <p class="muted small">
                         ${escapeHtml(directionText)}
@@ -1482,6 +1485,12 @@ function renderMessages() {
                   </button>
                 </div>
 
+                ${
+                  message.subject
+                    ? `<p><strong>${escapeHtml(message.subject)}</strong></p>`
+                    : ""
+                }
+
                 <p class="muted small">
                   ${escapeHtml(
                     message.text || ""
@@ -1492,8 +1501,8 @@ function renderMessages() {
           })
           .join("")
       : `
-        <p class="muted small">
-          No messages found.
+        <p class="empty-state">
+          No messages yet. Send one using the form on the left.
         </p>
       `;
 }
@@ -1630,6 +1639,21 @@ function renderFiles() {
                           file.category ||
                           "File"
                         )}
+                        ${
+                          formatFileSize(file.size)
+                            ? ` · ${escapeHtml(formatFileSize(file.size))}`
+                            : ""
+                        }
+                      </p>
+
+                      <p class="muted small">
+                        Uploaded by ${escapeHtml(
+                          file.uploaderName || "Staff"
+                        )}${
+                          formatShortDate(file.createdAt)
+                            ? ` · ${escapeHtml(formatShortDate(file.createdAt))}`
+                            : ""
+                        }
                       </p>
                     </div>
                   </div>
@@ -1647,29 +1671,29 @@ function renderFiles() {
                   url
                     ? `
                       <a
-                        class="text-button"
+                        class="button secondary full"
                         href="${escapeHtml(url)}"
                         target="_blank"
                         rel="noopener"
                       >
-                        View File
+                        Open / Download
                       </a>
                     `
-                    : ""
+                    : `<p class="field-hint">File is processing — check back shortly.</p>`
                 }
 
-                <p class="muted small">
-                  ${escapeHtml(
-                    file.note || ""
-                  )}
-                </p>
+                ${
+                  file.note
+                    ? `<p class="muted small">${escapeHtml(file.note)}</p>`
+                    : ""
+                }
               </div>
             `;
           })
           .join("")
       : `
-        <p class="muted small">
-          No files found.
+        <p class="empty-state">
+          No files found. Upload one using the form on the left.
         </p>
       `;
 }

@@ -376,7 +376,10 @@
               <select
                 class="field"
                 id="overviewMessageRecipient"
+                onchange="updateRecipientPreview('overviewMessageRecipient', 'overviewMessageRecipientPreview')"
               ></select>
+
+              <p class="recipient-preview" id="overviewMessageRecipientPreview"></p>
 
               <input
                 class="field"
@@ -491,6 +494,7 @@
                 id="userId"
               />
 
+              <p class="section-header">Account</p>
 
               <div class="form-row">
 
@@ -533,6 +537,35 @@
 
               </div>
 
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="type"
+                >
+                  Account Role
+                </label>
+
+                <select
+                  id="type"
+                  required
+                >
+                  <option value="Player">
+                    Player
+                  </option>
+
+                  <option value="Coach">
+                    Coach
+                  </option>
+
+                  <option value="Advisor">
+                    Advisor
+                  </option>
+                </select>
+
+              </div>
+
+              <p class="section-header">Contact Information</p>
 
               <div class="form-row">
 
@@ -574,37 +607,10 @@
 
               </div>
 
+              <p class="section-header">Hockey Profile</p>
+              <p class="field-hint">Height, weight, shoots, and season stats sync automatically below once an Elite Prospects profile is linked.</p>
 
               <div class="form-row">
-
-                <div class="form-group">
-
-                  <label
-                    class="field-label"
-                    for="type"
-                  >
-                    User Type
-                  </label>
-
-                  <select
-                    id="type"
-                    required
-                  >
-                    <option value="Player">
-                      Player
-                    </option>
-
-                    <option value="Coach">
-                      Coach
-                    </option>
-
-                    <option value="Advisor">
-                      Advisor
-                    </option>
-                  </select>
-
-                </div>
-
 
                 <div class="form-group">
 
@@ -623,40 +629,40 @@
 
                 </div>
 
+                <div class="form-group">
+
+                  <label
+                    class="field-label"
+                    for="position"
+                  >
+                    Position
+                  </label>
+
+                  <select id="position">
+
+                    <option value="">
+                      Select Position
+                    </option>
+
+                    <option value="Forward">
+                      Forward
+                    </option>
+
+                    <option value="Defense">
+                      Defense
+                    </option>
+
+                    <option value="Goalie">
+                      Goalie
+                    </option>
+
+                  </select>
+
+                </div>
+
               </div>
 
-
-              <div class="form-group">
-
-                <label
-                  class="field-label"
-                  for="position"
-                >
-                  Position
-                </label>
-
-                <select id="position">
-
-                  <option value="">
-                    Select Position
-                  </option>
-
-                  <option value="Forward">
-                    Forward
-                  </option>
-
-                  <option value="Defense">
-                    Defense
-                  </option>
-
-                  <option value="Goalie">
-                    Goalie
-                  </option>
-
-                </select>
-
-              </div>
-
+              <p class="section-header">Elite Prospects</p>
 
               <div class="form-group">
 
@@ -664,7 +670,7 @@
                   class="field-label"
                   for="eliteProspects"
                 >
-                  Elite Prospects / Stats
+                  Profile URL / Stats
                 </label>
 
                 <textarea
@@ -678,7 +684,7 @@
               <div class="form-group hidden" id="eliteProspectsAdminSection">
 
                 <label class="field-label">
-                  Elite Prospects Sync
+                  Sync Status
                 </label>
 
                 <div class="muted small" id="eliteProspectsAdminBody"></div>
@@ -697,9 +703,10 @@
 
               <div class="form-group hidden" id="progressAdminSection">
 
-                <label class="field-label">
-                  Development Progress
-                </label>
+                <p class="section-header">Development Progress</p>
+
+                <label class="field-label">Categories</label>
+                <p class="field-hint">Rename, reorder, or remove the categories offered below. Deleting a category keeps past ratings but stops offering it for new ones.</p>
 
                 <div id="progressCategoryManager" class="category-manager"></div>
 
@@ -720,7 +727,35 @@
                   </button>
                 </div>
 
+                <label class="field-label" style="margin-top: 10px;">Player Ratings</label>
+                <p class="field-hint">Enter a 0-100 rating and an optional note for each category, then save.</p>
+
                 <div id="progressRatingEditor" class="progress-rating-editor"></div>
+
+              </div>
+
+
+              <div class="form-group hidden" id="quickLinksSection">
+
+                <p class="section-header">Files &amp; Messages</p>
+
+                <div class="action-row">
+                  <button
+                    class="button secondary"
+                    type="button"
+                    onclick="openFilesForSelectedUser()"
+                  >
+                    View Files
+                  </button>
+
+                  <button
+                    class="button secondary"
+                    type="button"
+                    onclick="openMessagesForSelectedUser()"
+                  >
+                    Message This User
+                  </button>
+                </div>
 
               </div>
 
@@ -972,7 +1007,10 @@
                 <select
                   id="messageRecipient"
                   required
+                  onchange="updateRecipientPreview('messageRecipient', 'messageRecipientPreview')"
                 ></select>
+
+                <p class="recipient-preview" id="messageRecipientPreview"></p>
 
               </div>
 

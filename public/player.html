@@ -117,13 +117,21 @@
             <div class="two-column-workspace profile-workspace">
               <article class="card avatar-card"><div class="card-header"><span>Player Photo</span></div><div class="avatar-editor"><div class="large-avatar-frame"><img id="profileAvatar" alt="Player avatar" hidden /><span id="profileAvatarPlaceholder">No photo uploaded</span></div><input class="field" id="avatarInput" type="file" accept="image/*" /><button class="button full" type="button" onclick="uploadAvatar()">Upload Photo</button><button class="button secondary full" type="button" onclick="deleteAvatar()">Remove Photo</button></div></article>
               <article class="card"><div class="card-header"><span>Profile Information</span><span class="pill" id="profileStatusPill">Player</span></div><form class="dashboard-form" id="profileForm" onsubmit="saveProfile(event)">
+                <p class="section-header">Basic Information</p>
                 <div class="form-row"><div class="form-group"><label for="firstName">First Name</label><input id="firstName" required /></div><div class="form-group"><label for="lastName">Last Name</label><input id="lastName" required /></div></div>
-                <div class="form-row"><div class="form-group"><label for="birthYear">Birth Year</label><input id="birthYear" inputmode="numeric" /></div><div class="form-group"><label for="position">Position</label><select id="position"><option value="">Select Position</option><option>Forward</option><option>Defense</option><option>Goalie</option></select></div></div>
-                <div class="form-group"><label for="currentTeam">Current Team</label><input id="currentTeam" /></div>
-                <p class="muted small">Height, weight, shoots, and other bio details sync automatically from your linked Elite Prospects profile.</p>
+
+                <p class="section-header">Contact Information</p>
                 <div class="form-row"><div class="form-group"><label for="email">Email</label><input id="email" type="email" /></div><div class="form-group"><label for="phone">Phone</label><input id="phone" type="tel" /></div></div>
-                <div class="form-group"><label for="careerStatus">Career Status</label><select id="careerStatus" required><option value="Youth">Youth</option><option value="Prep">Prep</option><option value="Juniors">Juniors</option><option value="College">College</option><option value="Pro">Pro</option></select></div>
-                <div class="form-group"><label for="bio">Player Bio</label><textarea id="bio" placeholder="Background, goals, playing style..."></textarea></div><button class="button full" type="submit">Save Profile</button>
+
+                <p class="section-header">Hockey Information</p>
+                <p class="field-hint">Height, weight, shoots, and other physical details sync automatically once your Elite Prospects profile is linked below — see the Elite Prospects tab.</p>
+                <div class="form-row"><div class="form-group"><label for="birthYear">Birth Year</label><input id="birthYear" inputmode="numeric" /></div><div class="form-group"><label for="position">Position</label><select id="position"><option value="">Select Position</option><option>Forward</option><option>Defense</option><option>Goalie</option></select></div></div>
+                <div class="form-row"><div class="form-group"><label for="currentTeam">Current Team</label><input id="currentTeam" /></div><div class="form-group"><label for="careerStatus">Recruiting Status</label><select id="careerStatus" required><option value="Youth">Youth</option><option value="Prep">Prep</option><option value="Juniors">Juniors</option><option value="College">College</option><option value="Pro">Pro</option></select></div></div>
+
+                <p class="section-header">Personal Bio</p>
+                <div class="form-group"><label for="bio">About You</label><textarea id="bio" placeholder="Background, goals, playing style..."></textarea></div>
+
+                <button class="button full" type="submit">Save Profile</button>
               </form></article>
             </div>
           </section>
