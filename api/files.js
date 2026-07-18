@@ -6,8 +6,6 @@ const { getDb, toObjectId, serialize } = require("../lib/db");
 const { getSession } = require("../lib/auth");
 const { action, allowMethods, cleanText, readJson } = require("../lib/http");
 
-module.exports.config = { api: { bodyParser: false } };
-
 // NOTE ON PRIVACY: Blobs are uploaded with access: "public" (matching the
 // project's existing behavior). Anyone who obtains a file's URL can view it
 // without authentication - these are not access-controlled downloads.
@@ -83,6 +81,14 @@ function validateUpload(file, allowedTypes, maxSize) {
   if (!size) return "The file is empty.";
   if (size > maxSize) return "The file exceeds the maximum allowed size.";
   return null;
+}
+
+// formidable's internal error codes for an oversized upload (see
+// node_modules/formidable/src/FormidableError.js).
+const FORMIDABLE_SIZE_ERROR_CODES = new Set([1009, 1016]);
+
+function isUploadSizeError(error) {
+  return Boolean(error) && FORMIDABLE_SIZE_ERROR_CODES.has(error.code);
 }
 
 async function cleanupBlob(pathname) {
@@ -204,9 +210,11 @@ async function avatarRoute(req, res, db, session) {
   try {
     parsed = await parseForm(req, MAX_AVATAR_SIZE);
   } catch (error) {
-    console.error("Avatar upload parse error:", error.message);
+    console.error("Avatar multipart parsing failed:", error);
     return res.status(400).json({
-      error: "The upload could not be processed. Check the file size and try again."
+      error: isUploadSizeError(error)
+        ? "The image exceeds the maximum allowed size."
+        : "The uploaded image could not be read."
     });
   }
 
@@ -289,9 +297,11 @@ async function fileRoute(req, res, db, session) {
     try {
       parsed = await parseForm(req, MAX_FILE_SIZE);
     } catch (error) {
-      console.error("File upload parse error:", error.message);
+      console.error("File multipart parsing failed:", error);
       return res.status(400).json({
-        error: "The upload could not be processed. Check the file size and try again."
+        error: isUploadSizeError(error)
+          ? "The file exceeds the maximum allowed size."
+          : "The uploaded file could not be read."
       });
     }
 
@@ -430,3 +440,5 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: "File request failed." });
   }
 };
+
+module.exports.config = { api: { bodyParser: false } };
