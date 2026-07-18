@@ -1,5 +1,5 @@
 const { put, del } = require("@vercel/blob");
-const formidable = require("formidable");
+const { formidable } = require("formidable");
 const fs = require("node:fs/promises");
 
 const { getDb, toObjectId, serialize } = require("../lib/db");
