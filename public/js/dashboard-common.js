@@ -47,6 +47,52 @@ function initials(name) {
     .toUpperCase();
 }
 
+// Generic modal: relocates an existing (normally hidden) DOM node into the
+// shared modal frame, then returns it to its original spot on close. This
+// lets every "Edit"/"Upload"/"Manage" panel reuse one modal shell without
+// duplicating any markup or breaking existing getElementById references.
+function openModalWithNode(title, nodeId, options = {}) {
+  const overlay = document.getElementById("modalOverlay");
+  const titleEl = document.getElementById("modalTitle");
+  const bodyEl = document.getElementById("modalBody");
+  const panel = document.getElementById("modalPanel");
+  const node = document.getElementById(nodeId);
+
+  if (!overlay || !titleEl || !bodyEl || !node) return;
+
+  if (!node.__modalHome) {
+    node.__modalHome = { parent: node.parentElement, next: node.nextSibling };
+  }
+
+  bodyEl.innerHTML = "";
+  bodyEl.appendChild(node);
+  node.classList.remove("hidden");
+
+  titleEl.textContent = title;
+  panel?.classList.toggle("modal-wide", Boolean(options.wide));
+  overlay.classList.add("open");
+  document.body.classList.add("modal-open");
+}
+
+function closeModal() {
+  const overlay = document.getElementById("modalOverlay");
+  const bodyEl = document.getElementById("modalBody");
+  if (!overlay || !bodyEl) return;
+
+  const node = bodyEl.firstElementChild;
+  if (node && node.__modalHome) {
+    node.classList.add("hidden");
+    node.__modalHome.parent.insertBefore(node, node.__modalHome.next);
+  }
+
+  overlay.classList.remove("open");
+  document.body.classList.remove("modal-open");
+}
+
+document.addEventListener("keydown", function(event) {
+  if (event.key === "Escape") closeModal();
+});
+
 function formatFileSize(bytes) {
   const size = Number(bytes);
   if (!Number.isFinite(size) || size <= 0) return "";

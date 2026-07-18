@@ -593,20 +593,87 @@ function selectUser(id) {
   ).value =
     user.eliteProspects || "";
 
-  document
-    .getElementById(
-      "deleteUserButton"
-    )
-    .classList.remove("hidden");
-
   renderEliteProspectsAdminSection(user);
   renderProgressAdminSection(user);
-
-  document
-    .getElementById("quickLinksSection")
-    ?.classList.remove("hidden");
+  renderUserSummary(user);
 
   renderUserWorkspace();
+}
+
+function renderUserSummary(user) {
+  const empty = document.getElementById("userSummaryEmpty");
+  const content = document.getElementById("userSummaryContent");
+  const title = document.getElementById("userSummaryTitle");
+  const body = document.getElementById("userSummaryBody");
+
+  if (!empty || !content || !title || !body) return;
+
+  if (!user) {
+    empty.classList.remove("hidden");
+    content.classList.add("hidden");
+    title.textContent = "No User Selected";
+    return;
+  }
+
+  empty.classList.add("hidden");
+  content.classList.remove("hidden");
+  title.textContent = fullName(user);
+
+  const isPlayer = user.type === "Player";
+
+  document.getElementById("manageCategoriesButton")?.classList.toggle("hidden", !isPlayer);
+  document.getElementById("updateProgressButton")?.classList.toggle("hidden", !isPlayer);
+
+  body.innerHTML = `
+    <div class="message-head-info" style="margin-bottom: 14px;">
+      ${avatarHtml(fullName(user), user.avatarUrl, "avatar-sm")}
+      <div>
+        <strong>${escapeHtml(fullName(user))}</strong>
+        <span class="badge badge-role">${escapeHtml(user.type || "")}</span>
+      </div>
+    </div>
+
+    <p class="section-header">Contact</p>
+    <div class="info-grid">
+      <div class="info-row"><span>Email</span><strong>${escapeHtml(user.email || "—")}</strong></div>
+      <div class="info-row"><span>Phone</span><strong>${escapeHtml(user.phone || "—")}</strong></div>
+    </div>
+
+    ${
+      isPlayer
+        ? `
+          <p class="section-header">Hockey Profile</p>
+          <div class="info-grid">
+            <div class="info-row"><span>Birth Year</span><strong>${escapeHtml(user.birthYear || "—")}</strong></div>
+            <div class="info-row"><span>Position</span><strong>${escapeHtml(user.position || "—")}</strong></div>
+          </div>
+        `
+        : ""
+    }
+  `;
+}
+
+function startNewUser() {
+  resetUserForm();
+  openEditUserModal();
+}
+
+function openEditUserModal() {
+  const title = document.getElementById("userFormTitle");
+  if (title) {
+    title.textContent = selectedUserId ? "Edit User" : "Add User";
+  }
+  openModalWithNode(selectedUserId ? "Edit User" : "Add User", "userFormCard");
+}
+
+function openManageCategoriesModal() {
+  renderProgressCategoryManager();
+  openModalWithNode("Manage Categories", "categoryManagerSection", { wide: true });
+}
+
+function openUpdateProgressModal() {
+  renderProgressRatingEditor();
+  openModalWithNode("Update Player Progress", "playerRatingSection", { wide: true });
 }
 
 function openFilesForSelectedUser() {
@@ -630,6 +697,8 @@ function openMessagesForSelectedUser() {
     select.value = selectedUserId;
     select.dispatchEvent(new Event("change"));
   }
+
+  openModalWithNode("New Message", "sendMessageCard");
 }
 
 function renderEliteProspectsAdminSection(user) {
@@ -774,23 +843,15 @@ function latestRatingForCategory(categoryName) {
 }
 
 async function renderProgressAdminSection(user) {
-  const section = document.getElementById("progressAdminSection");
-  if (!section) return;
-
   if (!user || user.type !== "Player") {
-    section.classList.add("hidden");
+    playerProgressRatings = [];
     return;
   }
-
-  section.classList.remove("hidden");
 
   await Promise.all([
     loadProgressCategories(),
     loadPlayerProgress(user.id)
   ]);
-
-  renderProgressCategoryManager();
-  renderProgressRatingEditor();
 }
 
 function renderProgressCategoryManager() {
@@ -1068,18 +1129,9 @@ function resetUserForm() {
     "userFormTitle"
   ).textContent = "Add User";
 
-  document
-    .getElementById(
-      "deleteUserButton"
-    )
-    .classList.add("hidden");
-
   renderEliteProspectsAdminSection(null);
   renderProgressAdminSection(null);
-
-  document
-    .getElementById("quickLinksSection")
-    ?.classList.add("hidden");
+  renderUserSummary(null);
 
   renderUserWorkspace();
 }
@@ -1206,6 +1258,8 @@ async function saveUser(event) {
     }
 
     await loadUsers();
+    selectUser(selectedUserId);
+    closeModal();
 
     alert(
       id
@@ -1824,6 +1878,7 @@ function uploadWorkspaceFile(event) {
       noteInputId: "fileNote",
       onSuccess: function() {
         event.target.reset();
+        closeModal();
       }
     }
   );
@@ -1979,6 +2034,7 @@ async function sendWorkspaceMessage(
 
   if (sent) {
     event.target.reset();
+    closeModal();
   }
 }
 

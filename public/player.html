@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Collective | Player Dashboard</title>
   <link rel="stylesheet" href="css/player.css" />
+  <link rel="stylesheet" href="css/modal.css" />
   <script src="js/dashboard-common.js" defer></script>
   <script src="js/player.js" defer></script>
 </head>
@@ -16,7 +17,7 @@
       </button>
 
       <a class="logo" href="#" onclick="showPage('overview')">
-        Collective
+        <img class="logo-img" src="images/collectivelogo2.png" alt="Collective" />
       </a>
 
       <p class="topbar-title" id="topbarTitle">
@@ -29,7 +30,7 @@
     </header>
 
     <aside class="sidebar" id="sidebar">
-      <div class="brand-orb">C</div>
+      <img class="sidebar-logo" src="images/collectivelogo1.png" alt="Collective" />
       <nav class="side-nav">
         <button class="side-link active" data-page="overview" onclick="showPage('overview')">Overview</button>
         <button class="side-link" data-page="profile" onclick="showPage('profile')">Profile</button>
@@ -64,15 +65,6 @@
               <p class="muted small" id="overviewEliteProspects"></p>
             </div>
           </article>
-
-          <section class="feature-stage" aria-label="Player image display">
-            <div class="stage-grid"></div><div class="stage-glow"></div>
-            <div class="stage-image-wrap">
-              <img id="stageAvatar" alt="Player" hidden />
-              <span id="stageAvatarPlaceholder">Player Image</span>
-            </div>
-            <strong>Collective</strong><p>Development is the difference</p>
-          </section>
 
           <article class="card messages-card overview-card">
             <div class="card-header"><span>Messages</span><button class="open-button" onclick="showPage('messages')">Open</button></div>
@@ -116,7 +108,18 @@
           <section class="profile-section" id="profileDetailsSection">
             <div class="two-column-workspace profile-workspace">
               <article class="card avatar-card"><div class="card-header"><span>Player Photo</span></div><div class="avatar-editor"><div class="large-avatar-frame"><img id="profileAvatar" alt="Player avatar" hidden /><span id="profileAvatarPlaceholder">No photo uploaded</span></div><input class="field" id="avatarInput" type="file" accept="image/*" /><button class="button full" type="button" onclick="uploadAvatar()">Upload Photo</button><button class="button secondary full" type="button" onclick="deleteAvatar()">Remove Photo</button></div></article>
-              <article class="card"><div class="card-header"><span>Profile Information</span><span class="pill" id="profileStatusPill">Player</span></div><form class="dashboard-form" id="profileForm" onsubmit="saveProfile(event)">
+              <article class="card">
+                <div class="card-header">
+                  <span>Profile Information</span>
+                  <button class="button secondary" type="button" onclick="openModalWithNode('Update Profile', 'profileFormCard')">Update Profile</button>
+                </div>
+                <div class="card-body" id="profileSummaryBody"></div>
+              </article>
+            </div>
+
+            <article class="card hidden" id="profileFormCard">
+              <div class="card-header"><span>Update Profile</span><span class="pill" id="profileStatusPill">Player</span></div>
+              <form class="dashboard-form" id="profileForm" onsubmit="saveProfile(event)">
                 <p class="section-header">Basic Information</p>
                 <div class="form-row"><div class="form-group"><label for="firstName">First Name</label><input id="firstName" required /></div><div class="form-group"><label for="lastName">Last Name</label><input id="lastName" required /></div></div>
 
@@ -124,16 +127,19 @@
                 <div class="form-row"><div class="form-group"><label for="email">Email</label><input id="email" type="email" /></div><div class="form-group"><label for="phone">Phone</label><input id="phone" type="tel" /></div></div>
 
                 <p class="section-header">Hockey Information</p>
-                <p class="field-hint">Height, weight, shoots, and other physical details sync automatically once your Elite Prospects profile is linked below — see the Elite Prospects tab.</p>
+                <p class="field-hint">Height, weight, shoots, and other physical details sync automatically once your Elite Prospects profile is linked — see the Elite Prospects tab. They cannot be edited here.</p>
                 <div class="form-row"><div class="form-group"><label for="birthYear">Birth Year</label><input id="birthYear" inputmode="numeric" /></div><div class="form-group"><label for="position">Position</label><select id="position"><option value="">Select Position</option><option>Forward</option><option>Defense</option><option>Goalie</option></select></div></div>
                 <div class="form-row"><div class="form-group"><label for="currentTeam">Current Team</label><input id="currentTeam" /></div><div class="form-group"><label for="careerStatus">Recruiting Status</label><select id="careerStatus" required><option value="Youth">Youth</option><option value="Prep">Prep</option><option value="Juniors">Juniors</option><option value="College">College</option><option value="Pro">Pro</option></select></div></div>
 
                 <p class="section-header">Personal Bio</p>
                 <div class="form-group"><label for="bio">About You</label><textarea id="bio" placeholder="Background, goals, playing style..."></textarea></div>
 
-                <button class="button full" type="submit">Save Profile</button>
-              </form></article>
-            </div>
+                <div class="form-actions">
+                  <button class="button full" type="submit">Save Profile</button>
+                  <button class="button secondary full" type="button" onclick="closeModal()">Cancel</button>
+                </div>
+              </form>
+            </article>
           </section>
 
           <section class="profile-section" id="profileEliteProspectsSection">
@@ -157,17 +163,73 @@
       </section>
 
       <section class="page" id="messagesPage">
-        <div class="workspace-header"><div><p class="eyebrow">Communication</p><h2>Messages</h2></div><input class="search wide" id="messageSearch" type="search" placeholder="Search messages..." oninput="renderMessages()" /></div>
-        <div class="two-column-workspace messages-workspace"><article class="card"><div class="card-header"><span>Send Message</span></div><form class="dashboard-form" onsubmit="sendMessage(event)"><div class="form-group"><label for="messageRecipient">Recipient</label><select id="messageRecipient" required></select></div><div class="form-group"><label for="messageSubject">Subject</label><input id="messageSubject" required /></div><div class="form-group"><label for="messageText">Message</label><textarea id="messageText" required></textarea></div><button class="button full" type="submit">Send Message</button></form></article><article class="card"><div class="card-header"><span>Message History</span><span class="pill" id="messageCountPill">0 messages</span></div><div class="workspace-list inside-card" id="messageList"></div></article></div>
+        <div class="workspace-header">
+          <div><p class="eyebrow">Communication</p><h2>Messages</h2></div>
+          <div class="action-row">
+            <input class="search wide" id="messageSearch" type="search" placeholder="Search messages..." oninput="renderMessages()" />
+            <button class="button" type="button" onclick="openModalWithNode('New Message', 'messageFormCard')">New Message</button>
+          </div>
+        </div>
+
+        <article class="card">
+          <div class="card-header"><span>Message History</span><span class="pill" id="messageCountPill">0 messages</span></div>
+          <div class="workspace-list inside-card" id="messageList"></div>
+        </article>
+
+        <article class="card hidden" id="messageFormCard">
+          <div class="card-header"><span>Send Message</span></div>
+          <form class="dashboard-form" onsubmit="sendMessage(event)">
+            <div class="form-group"><label for="messageRecipient">Recipient</label><select id="messageRecipient" required></select></div>
+            <div class="form-group"><label for="messageSubject">Subject</label><input id="messageSubject" required /></div>
+            <div class="form-group"><label for="messageText">Message</label><textarea id="messageText" required></textarea></div>
+            <div class="form-actions">
+              <button class="button full" type="submit">Send Message</button>
+              <button class="button secondary full" type="button" onclick="closeModal()">Cancel</button>
+            </div>
+          </form>
+        </article>
       </section>
 
       <section class="page" id="filesPage">
-        <div class="workspace-header"><div><p class="eyebrow">Library</p><h2>Files</h2></div><input class="search wide" id="fileSearch" type="search" placeholder="Search files..." oninput="renderFiles()" /></div>
-        <div class="two-column-workspace files-workspace"><article class="card"><div class="card-header"><span>Upload File</span></div><form class="dashboard-form" onsubmit="uploadFile(event)"><div class="form-group"><label for="fileInput">Photo, Video, or Document</label><input id="fileInput" type="file" required /></div><div class="form-group"><label for="fileCategory">Category</label><select id="fileCategory"><option>Photo</option><option>Video</option><option>Game Film</option><option>Training</option><option>Document</option><option>Other</option></select></div><div class="form-group"><label for="fileNote">Note</label><textarea id="fileNote" placeholder="Optional description..."></textarea></div><button class="button full" type="submit">Upload File</button></form></article><article class="card"><div class="card-header"><span>Your Files</span><span class="pill" id="fileCountPill">0 files</span></div><div class="file-grid" id="fileList"></div></article></div>
+        <div class="workspace-header">
+          <div><p class="eyebrow">Library</p><h2>Files</h2></div>
+          <div class="action-row">
+            <input class="search wide" id="fileSearch" type="search" placeholder="Search files..." oninput="renderFiles()" />
+            <button class="button" type="button" onclick="openModalWithNode('Upload File', 'fileFormCard')">Upload File</button>
+          </div>
+        </div>
+
+        <article class="card">
+          <div class="card-header"><span>Your Files</span><span class="pill" id="fileCountPill">0 files</span></div>
+          <div class="file-grid" id="fileList"></div>
+        </article>
+
+        <article class="card hidden" id="fileFormCard">
+          <div class="card-header"><span>Upload File</span></div>
+          <form class="dashboard-form" onsubmit="uploadFile(event)">
+            <div class="form-group"><label for="fileInput">Photo, Video, or Document</label><input id="fileInput" type="file" required /></div>
+            <div class="form-group"><label for="fileCategory">Category</label><select id="fileCategory"><option>Photo</option><option>Video</option><option>Game Film</option><option>Training</option><option>Document</option><option>Other</option></select></div>
+            <div class="form-group"><label for="fileNote">Note</label><textarea id="fileNote" placeholder="Optional description..."></textarea></div>
+            <div class="form-actions">
+              <button class="button full" type="submit">Upload File</button>
+              <button class="button secondary full" type="button" onclick="closeModal()">Cancel</button>
+            </div>
+          </form>
+        </article>
       </section>
     </main>
 
     <footer class="footer"><div><strong>Collective</strong><span>Private Development Ecosystem</span></div><span class="connected">● Connected</span></footer>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-panel" id="modalPanel" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 id="modalTitle"></h3>
+        <button class="modal-close" type="button" onclick="closeModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
   </div>
 </body>
 </html>

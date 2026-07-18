@@ -15,6 +15,11 @@
     href="css/admin.css"
   />
 
+  <link
+    rel="stylesheet"
+    href="css/modal.css"
+  />
+
   <script
     src="js/dashboard-common.js"
     defer
@@ -45,7 +50,7 @@
         href="#"
         onclick="showPage('overview')"
       >
-        Collective
+        <img class="logo-img" src="images/collectivelogo2.png" alt="Collective" />
       </a>
 
       <p
@@ -72,9 +77,7 @@
       id="sidebar"
     >
 
-      <div class="brand-orb">
-        C
-      </div>
+      <img class="sidebar-logo" src="images/collectivelogo1.png" alt="Collective" />
 
       <nav class="side-nav">
 
@@ -463,283 +466,63 @@
           </article>
 
 
-          <!-- USER FORM -->
+          <!-- SELECTED USER SUMMARY (read-only) -->
           <article class="card">
 
             <div class="card-header">
 
-              <span id="userFormTitle">
-                Add User
+              <span id="userSummaryTitle">
+                No User Selected
               </span>
 
               <button
                 class="button secondary"
                 type="button"
-                onclick="resetUserForm()"
+                onclick="startNewUser()"
               >
                 New User
               </button>
 
             </div>
 
+            <div class="card-body">
 
-            <form
-              class="admin-form"
-              id="userForm"
-              onsubmit="saveUser(event)"
-            >
+              <p class="empty-state" id="userSummaryEmpty">
+                Select a user from the list, or add a new one.
+              </p>
 
-              <input
-                type="hidden"
-                id="userId"
-              />
+              <div class="hidden" id="userSummaryContent">
 
-              <p class="section-header">Account</p>
+                <div id="userSummaryBody"></div>
 
-              <div class="form-row">
-
-                <div class="form-group">
-
-                  <label
-                    class="field-label"
-                    for="firstName"
-                  >
-                    First Name
-                  </label>
-
-                  <input
-                    id="firstName"
-                    type="text"
-                    placeholder="First Name"
-                    required
-                  />
-
-                </div>
-
-
-                <div class="form-group">
-
-                  <label
-                    class="field-label"
-                    for="lastName"
-                  >
-                    Last Name
-                  </label>
-
-                  <input
-                    id="lastName"
-                    type="text"
-                    placeholder="Last Name"
-                    required
-                  />
-
-                </div>
-
-              </div>
-
-              <div class="form-group">
-
-                <label
-                  class="field-label"
-                  for="type"
-                >
-                  Account Role
-                </label>
-
-                <select
-                  id="type"
-                  required
-                >
-                  <option value="Player">
-                    Player
-                  </option>
-
-                  <option value="Coach">
-                    Coach
-                  </option>
-
-                  <option value="Advisor">
-                    Advisor
-                  </option>
-                </select>
-
-              </div>
-
-              <p class="section-header">Contact Information</p>
-
-              <div class="form-row">
-
-                <div class="form-group">
-
-                  <label
-                    class="field-label"
-                    for="email"
-                  >
-                    Email
-                  </label>
-
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="Email"
-                    required
-                  />
-
-                </div>
-
-
-                <div class="form-group">
-
-                  <label
-                    class="field-label"
-                    for="phone"
-                  >
-                    Phone Number
-                  </label>
-
-                  <input
-                    id="phone"
-                    type="tel"
-                    placeholder="Phone Number"
-                  />
-
-                </div>
-
-              </div>
-
-              <p class="section-header">Hockey Profile</p>
-              <p class="field-hint">Height, weight, shoots, and season stats sync automatically below once an Elite Prospects profile is linked.</p>
-
-              <div class="form-row">
-
-                <div class="form-group">
-
-                  <label
-                    class="field-label"
-                    for="birthYear"
-                  >
-                    Birth Year
-                  </label>
-
-                  <input
-                    id="birthYear"
-                    type="text"
-                    placeholder="Birth Year"
-                  />
-
-                </div>
-
-                <div class="form-group">
-
-                  <label
-                    class="field-label"
-                    for="position"
-                  >
-                    Position
-                  </label>
-
-                  <select id="position">
-
-                    <option value="">
-                      Select Position
-                    </option>
-
-                    <option value="Forward">
-                      Forward
-                    </option>
-
-                    <option value="Defense">
-                      Defense
-                    </option>
-
-                    <option value="Goalie">
-                      Goalie
-                    </option>
-
-                  </select>
-
-                </div>
-
-              </div>
-
-              <p class="section-header">Elite Prospects</p>
-
-              <div class="form-group">
-
-                <label
-                  class="field-label"
-                  for="eliteProspects"
-                >
-                  Profile URL / Stats
-                </label>
-
-                <textarea
-                  id="eliteProspects"
-                  placeholder="Elite Prospects URL, stats, or notes..."
-                ></textarea>
-
-              </div>
-
-
-              <div class="form-group hidden" id="eliteProspectsAdminSection">
-
-                <label class="field-label">
-                  Sync Status
-                </label>
-
-                <div class="muted small" id="eliteProspectsAdminBody"></div>
-
-                <button
-                  class="button secondary"
-                  type="button"
-                  id="refreshEliteProspectsButton"
-                  onclick="refreshEliteProspects()"
-                >
-                  Refresh Elite Prospects Data
-                </button>
-
-              </div>
-
-
-              <div class="form-group hidden" id="progressAdminSection">
-
-                <p class="section-header">Development Progress</p>
-
-                <label class="field-label">Categories</label>
-                <p class="field-hint">Rename, reorder, or remove the categories offered below. Deleting a category keeps past ratings but stops offering it for new ones.</p>
-
-                <div id="progressCategoryManager" class="category-manager"></div>
-
-                <div class="form-row">
-                  <input
-                    class="field"
-                    id="newProgressCategoryName"
-                    type="text"
-                    placeholder="New category name"
-                  />
+                <div class="action-row" id="userSummaryActions">
 
                   <button
-                    class="button secondary"
+                    class="button"
                     type="button"
-                    onclick="addProgressCategory()"
+                    onclick="openEditUserModal()"
                   >
-                    Add Category
+                    Edit User
                   </button>
-                </div>
 
-                <label class="field-label" style="margin-top: 10px;">Player Ratings</label>
-                <p class="field-hint">Enter a 0-100 rating and an optional note for each category, then save.</p>
+                  <button
+                    class="button secondary hidden"
+                    id="manageCategoriesButton"
+                    type="button"
+                    onclick="openManageCategoriesModal()"
+                  >
+                    Manage Categories
+                  </button>
 
-                <div id="progressRatingEditor" class="progress-rating-editor"></div>
+                  <button
+                    class="button secondary hidden"
+                    id="updateProgressButton"
+                    type="button"
+                    onclick="openUpdateProgressModal()"
+                  >
+                    Update Player Progress
+                  </button>
 
-              </div>
-
-
-              <div class="form-group hidden" id="quickLinksSection">
-
-                <p class="section-header">Files &amp; Messages</p>
-
-                <div class="action-row">
                   <button
                     class="button secondary"
                     type="button"
@@ -753,36 +536,307 @@
                     type="button"
                     onclick="openMessagesForSelectedUser()"
                   >
-                    Message This User
+                    Send Message
                   </button>
+
+                  <button
+                    class="button danger"
+                    id="deleteUserButton"
+                    type="button"
+                    onclick="deleteSelectedUser()"
+                  >
+                    Delete User
+                  </button>
+
+                </div>
+
+                <div class="form-group hidden" id="eliteProspectsAdminSection" style="margin-top: 16px;">
+
+                  <p class="section-header">Elite Prospects</p>
+
+                  <div class="muted small" id="eliteProspectsAdminBody"></div>
+
+                  <button
+                    class="button secondary"
+                    type="button"
+                    id="refreshEliteProspectsButton"
+                    onclick="refreshEliteProspects()"
+                  >
+                    Refresh Elite Prospects Data
+                  </button>
+
                 </div>
 
               </div>
 
+            </div>
 
-              <div class="form-actions">
+          </article>
 
-                <button
-                  class="button full"
-                  type="submit"
+        </div>
+
+
+        <!-- EDIT USER (opens in the shared modal) -->
+        <article class="card hidden" id="userFormCard">
+
+          <div class="card-header">
+            <span id="userFormTitle">Add User</span>
+          </div>
+
+          <form
+            class="admin-form"
+            id="userForm"
+            onsubmit="saveUser(event)"
+          >
+
+            <input
+              type="hidden"
+              id="userId"
+            />
+
+            <p class="section-header">Account</p>
+
+            <div class="form-row">
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="firstName"
                 >
-                  Save User
-                </button>
+                  First Name
+                </label>
 
-                <button
-                  class="button danger hidden"
-                  id="deleteUserButton"
-                  type="button"
-                  onclick="deleteSelectedUser()"
-                >
-                  Delete User
-                </button>
+                <input
+                  id="firstName"
+                  type="text"
+                  placeholder="First Name"
+                  required
+                />
 
               </div>
 
-            </form>
 
-          </article>
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="lastName"
+                >
+                  Last Name
+                </label>
+
+                <input
+                  id="lastName"
+                  type="text"
+                  placeholder="Last Name"
+                  required
+                />
+
+              </div>
+
+            </div>
+
+            <div class="form-group">
+
+              <label
+                class="field-label"
+                for="type"
+              >
+                Account Role
+              </label>
+
+              <select
+                id="type"
+                required
+              >
+                <option value="Player">
+                  Player
+                </option>
+
+                <option value="Coach">
+                  Coach
+                </option>
+
+                <option value="Advisor">
+                  Advisor
+                </option>
+              </select>
+
+            </div>
+
+            <p class="section-header">Contact Information</p>
+
+            <div class="form-row">
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="email"
+                >
+                  Email
+                </label>
+
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="Email"
+                  required
+                />
+
+              </div>
+
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="phone"
+                >
+                  Phone Number
+                </label>
+
+                <input
+                  id="phone"
+                  type="tel"
+                  placeholder="Phone Number"
+                />
+
+              </div>
+
+            </div>
+
+            <p class="section-header">Hockey Profile</p>
+            <p class="field-hint">Height, weight, shoots, and season stats sync automatically once an Elite Prospects profile is linked. They cannot be edited here.</p>
+
+            <div class="form-row">
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="birthYear"
+                >
+                  Birth Year
+                </label>
+
+                <input
+                  id="birthYear"
+                  type="text"
+                  placeholder="Birth Year"
+                />
+
+              </div>
+
+              <div class="form-group">
+
+                <label
+                  class="field-label"
+                  for="position"
+                >
+                  Position
+                </label>
+
+                <select id="position">
+
+                  <option value="">
+                    Select Position
+                  </option>
+
+                  <option value="Forward">
+                    Forward
+                  </option>
+
+                  <option value="Defense">
+                    Defense
+                  </option>
+
+                  <option value="Goalie">
+                    Goalie
+                  </option>
+
+                </select>
+
+              </div>
+
+            </div>
+
+            <p class="section-header">Elite Prospects</p>
+
+            <div class="form-group">
+
+              <label
+                class="field-label"
+                for="eliteProspects"
+              >
+                Profile URL / Stats
+              </label>
+
+              <textarea
+                id="eliteProspects"
+                placeholder="Elite Prospects URL, stats, or notes..."
+              ></textarea>
+
+            </div>
+
+            <div class="form-actions">
+
+              <button
+                class="button full"
+                type="submit"
+              >
+                Save User
+              </button>
+
+              <button
+                class="button secondary full"
+                type="button"
+                onclick="closeModal()"
+              >
+                Cancel
+              </button>
+
+            </div>
+
+          </form>
+
+        </article>
+
+
+        <!-- MANAGE CATEGORIES (opens in the shared modal) -->
+        <div class="hidden" id="categoryManagerSection">
+
+          <p class="field-hint">Rename, reorder, or remove the categories offered below. Deleting a category keeps past ratings but stops offering it for new ones.</p>
+
+          <div id="progressCategoryManager" class="category-manager"></div>
+
+          <div class="form-row">
+            <input
+              class="field"
+              id="newProgressCategoryName"
+              type="text"
+              placeholder="New category name"
+            />
+
+            <button
+              class="button secondary"
+              type="button"
+              onclick="addProgressCategory()"
+            >
+              Add Category
+            </button>
+          </div>
+
+        </div>
+
+
+        <!-- UPDATE PLAYER PROGRESS (opens in the shared modal) -->
+        <div class="hidden" id="playerRatingSection">
+
+          <p class="field-hint">Enter a 0-100 rating and an optional note for each category, then save.</p>
+
+          <div id="progressRatingEditor" class="progress-rating-editor"></div>
 
         </div>
 
@@ -843,77 +897,112 @@
             </h2>
           </div>
 
+          <button
+            class="button"
+            type="button"
+            onclick="openModalWithNode('Upload File', 'fileUploadCard')"
+          >
+            Upload File
+          </button>
+
         </div>
 
 
-        <div class="two-column-workspace">
+        <!-- FILE LIST -->
+        <article class="card">
+
+          <div class="card-header">
+
+            <span>
+              All Files
+            </span>
+
+            <span
+              class="pill"
+              id="fileCountPill"
+            >
+              0 files
+            </span>
+
+          </div>
+
+          <div
+            class="workspace-list inside-card"
+            id="fileList"
+          ></div>
+
+        </article>
 
 
-          <!-- FILE UPLOAD -->
-          <article class="card">
+        <!-- FILE UPLOAD (opens in the shared modal) -->
+        <article class="card hidden" id="fileUploadCard">
 
-            <div class="card-header">
-              <span>
-                Upload File
-              </span>
+          <div class="card-header">
+            <span>
+              Upload File
+            </span>
+          </div>
+
+          <form
+            class="admin-form"
+            onsubmit="uploadWorkspaceFile(event)"
+          >
+
+            <div class="form-group">
+
+              <label
+                class="field-label"
+                for="fileWorkspaceUser"
+              >
+                Assign To
+              </label>
+
+              <select
+                id="fileWorkspaceUser"
+                required
+              ></select>
+
+              <p class="field-hint">Confirm this is the player who should receive the file before uploading.</p>
+
             </div>
 
-            <form
-              class="admin-form"
-              onsubmit="uploadWorkspaceFile(event)"
-            >
 
-              <div class="form-group">
+            <div class="form-group">
 
-                <label
-                  class="field-label"
-                  for="fileWorkspaceUser"
-                >
-                  Assign To
-                </label>
+              <label
+                class="field-label"
+                for="fileWorkspaceInput"
+              >
+                Choose File
+              </label>
 
-                <select
-                  id="fileWorkspaceUser"
-                  required
-                ></select>
+              <input
+                type="file"
+                id="fileWorkspaceInput"
+                required
+              />
 
-              </div>
+            </div>
 
 
-              <div class="form-group">
+            <div class="form-group">
 
-                <label
-                  class="field-label"
-                  for="fileWorkspaceInput"
-                >
-                  Choose File
-                </label>
+              <label
+                class="field-label"
+                for="fileNote"
+              >
+                File Note
+              </label>
 
-                <input
-                  type="file"
-                  id="fileWorkspaceInput"
-                  required
-                />
+              <textarea
+                id="fileNote"
+                placeholder="Optional note..."
+              ></textarea>
 
-              </div>
+            </div>
 
 
-              <div class="form-group">
-
-                <label
-                  class="field-label"
-                  for="fileNote"
-                >
-                  File Note
-                </label>
-
-                <textarea
-                  id="fileNote"
-                  placeholder="Optional note..."
-                ></textarea>
-
-              </div>
-
+            <div class="form-actions">
 
               <button
                 class="button full"
@@ -922,37 +1011,19 @@
                 Upload And Assign
               </button>
 
-            </form>
-
-          </article>
-
-
-          <!-- FILE LIST -->
-          <article class="card">
-
-            <div class="card-header">
-
-              <span>
-                All Files
-              </span>
-
-              <span
-                class="pill"
-                id="fileCountPill"
+              <button
+                class="button secondary full"
+                type="button"
+                onclick="closeModal()"
               >
-                0 files
-              </span>
+                Cancel
+              </button>
 
             </div>
 
-            <div
-              class="workspace-list inside-card"
-              id="fileList"
-            ></div>
+          </form>
 
-          </article>
-
-        </div>
+        </article>
 
       </section>
 
@@ -975,95 +1046,128 @@
             </h2>
           </div>
 
+          <button
+            class="button"
+            type="button"
+            onclick="openModalWithNode('New Message', 'sendMessageCard')"
+          >
+            New Message
+          </button>
+
         </div>
 
 
-        <div class="two-column-workspace">
+        <!-- MESSAGE LOG -->
+        <article class="card">
+
+          <div class="card-header">
+
+            <span>
+              Message Log
+            </span>
+
+            <span
+              class="pill"
+              id="messageCountPill"
+            >
+              0 messages
+            </span>
+
+          </div>
+
+          <div
+            class="workspace-list inside-card"
+            id="messageWorkspaceList"
+          ></div>
+
+        </article>
 
 
-          <!-- SEND MESSAGE -->
-          <article class="card">
+        <!-- SEND MESSAGE (opens in the shared modal) -->
+        <article class="card hidden" id="sendMessageCard">
 
-            <div class="card-header">
-              <span>
-                Send Message
-              </span>
+          <div class="card-header">
+            <span>
+              Send Message
+            </span>
+          </div>
+
+          <form
+            class="admin-form"
+            onsubmit="sendWorkspaceMessage(event)"
+          >
+
+            <div class="form-group">
+
+              <label
+                class="field-label"
+                for="messageRecipient"
+              >
+                Recipient
+              </label>
+
+              <select
+                id="messageRecipient"
+                required
+                onchange="updateRecipientPreview('messageRecipient', 'messageRecipientPreview')"
+              ></select>
+
+              <p class="recipient-preview" id="messageRecipientPreview"></p>
+
             </div>
 
-            <form
-              class="admin-form"
-              onsubmit="sendWorkspaceMessage(event)"
-            >
 
-              <div class="form-group">
+            <div class="form-group">
 
-                <label
-                  class="field-label"
-                  for="messageRecipient"
-                >
-                  Recipient
-                </label>
+              <label
+                class="field-label"
+                for="messageType"
+              >
+                Message Type
+              </label>
 
-                <select
-                  id="messageRecipient"
-                  required
-                  onchange="updateRecipientPreview('messageRecipient', 'messageRecipientPreview')"
-                ></select>
+              <select id="messageType">
 
-                <p class="recipient-preview" id="messageRecipientPreview"></p>
+                <option value="Admin Notice">
+                  Admin Notice
+                </option>
 
-              </div>
+                <option value="Advisor Message">
+                  Advisor Message
+                </option>
 
+                <option value="Video Coach Message">
+                  Video Coach Message
+                </option>
 
-              <div class="form-group">
+                <option value="File Update">
+                  File Update
+                </option>
 
-                <label
-                  class="field-label"
-                  for="messageType"
-                >
-                  Message Type
-                </label>
+              </select>
 
-                <select id="messageType">
-
-                  <option value="Admin Notice">
-                    Admin Notice
-                  </option>
-
-                  <option value="Advisor Message">
-                    Advisor Message
-                  </option>
-
-                  <option value="Video Coach Message">
-                    Video Coach Message
-                  </option>
-
-                  <option value="File Update">
-                    File Update
-                  </option>
-
-                </select>
-
-              </div>
+            </div>
 
 
-              <div class="form-group">
+            <div class="form-group">
 
-                <label
-                  class="field-label"
-                  for="messageText"
-                >
-                  Message
-                </label>
+              <label
+                class="field-label"
+                for="messageText"
+              >
+                Message
+              </label>
 
-                <textarea
-                  id="messageText"
-                  placeholder="Write message..."
-                  required
-                ></textarea>
+              <textarea
+                id="messageText"
+                placeholder="Write message..."
+                required
+              ></textarea>
 
-              </div>
+            </div>
 
+
+            <div class="form-actions">
 
               <button
                 class="button full"
@@ -1072,37 +1176,19 @@
                 Send Message
               </button>
 
-            </form>
-
-          </article>
-
-
-          <!-- MESSAGE LOG -->
-          <article class="card">
-
-            <div class="card-header">
-
-              <span>
-                Message Log
-              </span>
-
-              <span
-                class="pill"
-                id="messageCountPill"
+              <button
+                class="button secondary full"
+                type="button"
+                onclick="closeModal()"
               >
-                0 messages
-              </span>
+                Cancel
+              </button>
 
             </div>
 
-            <div
-              class="workspace-list inside-card"
-              id="messageWorkspaceList"
-            ></div>
+          </form>
 
-          </article>
-
-        </div>
+        </article>
 
       </section>
 
@@ -1186,6 +1272,16 @@
 
     </main>
 
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-panel" id="modalPanel" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h3 id="modalTitle"></h3>
+        <button class="modal-close" type="button" onclick="closeModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
   </div>
 </body>
 </html>

@@ -911,6 +911,44 @@ function renderProfile() {
   setAvatar(
     player.avatarUrl || ""
   );
+
+  renderProfileSummary();
+}
+
+function renderProfileSummary() {
+  const body =
+    document.getElementById(
+      "profileSummaryBody"
+    );
+
+  if (!body || !player) {
+    return;
+  }
+
+  body.innerHTML = `
+    <p class="section-header">Account</p>
+    <div class="info-grid">
+      <div class="info-row"><span>Name</span><strong>${escapeHtml(fullName())}</strong></div>
+      <div class="info-row"><span>Recruiting Status</span><strong>${escapeHtml(player.careerStatus || "Youth")}</strong></div>
+    </div>
+
+    <p class="section-header">Contact</p>
+    <div class="info-grid">
+      <div class="info-row"><span>Email</span><strong>${escapeHtml(player.email || "—")}</strong></div>
+      <div class="info-row"><span>Phone</span><strong>${escapeHtml(player.phone || "—")}</strong></div>
+    </div>
+
+    <p class="section-header">Hockey Profile</p>
+    <div class="info-grid">
+      <div class="info-row"><span>Birth Year</span><strong>${escapeHtml(player.birthYear || "—")}</strong></div>
+      <div class="info-row"><span>Position</span><strong>${escapeHtml(capitalize(player.position) || "—")}</strong></div>
+      <div class="info-row"><span>Current Team</span><strong>${escapeHtml(player.currentTeam || "—")}</strong></div>
+    </div>
+    <p class="field-hint">Height, weight, shoots, and season stats sync from your linked Elite Prospects profile — see the Elite Prospects tab.</p>
+
+    <p class="section-header">Bio</p>
+    <p class="muted small">${escapeHtml(player.bio || "No bio added yet.")}</p>
+  `;
 }
 
 function eliteProspectsSeasonLine(season) {
@@ -1758,8 +1796,9 @@ async function saveProfile(event) {
     fillProfileForm();
     fillRecruitingLevels();
     renderEverything();
+    closeModal();
 
-    alert("Profile saved.");
+    alert("Profile updated.");
   } catch (error) {
     console.error(
       "Save profile error:",
@@ -2053,6 +2092,7 @@ async function sendMessage(event) {
     event.target.reset();
 
     renderEverything();
+    closeModal();
   } catch (error) {
     console.error(
       "Send message error:",
@@ -2178,6 +2218,7 @@ async function uploadFile(event) {
     event.target.reset();
 
     renderEverything();
+    closeModal();
   } catch (error) {
     console.error(
       "File upload error:",
