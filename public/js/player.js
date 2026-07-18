@@ -101,25 +101,11 @@ async function apiRequest(
 }
 
 function setProfilePanel(panel) {
-  document
-    .querySelectorAll(
-      ".profile-panel"
-    )
-    .forEach(function(item) {
-      item.classList.remove(
-        "active"
-      );
-    });
-
-  const panelName =
-    panel.charAt(0).toUpperCase() +
-    panel.slice(1);
-
-  document
-    .getElementById(
-      `profile${panelName}Panel`
-    )
-    ?.classList.add("active");
+  const sectionIds = {
+    details: "profileDetailsSection",
+    eliteprospects: "profileEliteProspectsSection",
+    progress: "profileProgressSection"
+  };
 
   document
     .querySelectorAll(".segment")
@@ -130,6 +116,12 @@ function setProfilePanel(panel) {
           panel
       );
     });
+
+  requestAnimationFrame(function() {
+    document
+      .getElementById(sectionIds[panel] || "")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 }
 
 function allowedRecruitingLevels(
@@ -981,6 +973,18 @@ function eliteProspectsContextLine(context) {
   return [context.team, context.league, context.season].filter(Boolean).join(" · ");
 }
 
+function statBoxGridHtml(boxes) {
+  return `<div class="stat-box-grid">${boxes.map(function(box) {
+    const value = box[1];
+    return `
+      <div class="stat-box">
+        <strong>${value != null ? escapeHtml(String(value)) : "—"}</strong>
+        <span>${escapeHtml(box[0])}</span>
+      </div>
+    `;
+  }).join("")}</div>`;
+}
+
 function renderEliteProspects() {
   const overviewLine = document.getElementById("overviewEliteProspects");
   const body = document.getElementById("eliteProspectsBody");
@@ -1011,50 +1015,118 @@ function renderEliteProspects() {
   }
 
   if (!player?.eliteProspects) {
-    body.innerHTML = `<p class="muted small">No Elite Prospects profile linked.</p>`;
+    body.innerHTML = `<p class="muted small ep-empty">No Elite Prospects profile linked.</p>`;
     return;
   }
 
   const bio = epData?.bio || {};
+  const season = epData?.latestSeason || {};
+  const recentForm = epData?.recentForm || {};
+  const context = epData?.currentContext || {};
+
   const bioFacts = [
     ["Full Name", bio.fullName],
     ["Date of Birth", bio.dateOfBirth],
     ["Age", bio.age],
-    ["Place of Birth", bio.placeOfBirth],
-    ["Nationality", bio.nationality],
     ["Position", bio.position],
     ["Shoots/Catches", bio.shoots],
     ["Height", bio.height],
-    ["Weight", bio.weight]
+    ["Weight", bio.weight],
+    ["Nationality", bio.nationality],
+    ["Place of Birth", bio.placeOfBirth]
   ].filter(function(fact) {
     return fact[1] != null && fact[1] !== "";
   });
 
-  const factsHtml = bioFacts.length
-    ? `<div class="profile-facts">${bioFacts.map(function(fact) {
-        return `<div class="fact-box"><span>${escapeHtml(fact[0])}</span><strong>${escapeHtml(String(fact[1]))}</strong></div>`;
+  const bioHtml = bioFacts.length
+    ? `<div class="ep-fact-grid">${bioFacts.map(function(fact) {
+        return `<div class="ep-fact"><span>${escapeHtml(fact[0])}</span><strong>${escapeHtml(String(fact[1]))}</strong></div>`;
       }).join("")}</div>`
-    : `<p class="muted small">No biography data yet.</p>`;
+    : `<p class="muted small ep-empty">No biography data yet.</p>`;
 
-  const contextHtml = contextLine
-    ? `<p class="muted small" style="margin-top:10px">${escapeHtml(contextLine)}</p>`
-    : "";
+  const contextFacts = [
+    ["Team", context.team],
+    ["League", context.league],
+    ["Season", context.season]
+  ].filter(function(fact) {
+    return fact[1] != null && fact[1] !== "";
+  });
 
-  const seasonHtml = seasonLine
-    ? `<p class="muted small" style="margin-top:10px"><strong>Latest Season:</strong> ${escapeHtml(seasonLine)}</p>`
-    : `<p class="muted small" style="margin-top:10px">No full season totals available.</p>`;
+  const contextHtml = contextFacts.length
+    ? `<div class="ep-fact-grid">${contextFacts.map(function(fact) {
+        return `<div class="ep-fact"><span>${escapeHtml(fact[0])}</span><strong>${escapeHtml(String(fact[1]))}</strong></div>`;
+      }).join("")}</div>`
+    : `<p class="muted small ep-empty">No current team on file.</p>`;
 
-  const recentFormHtml = recentFormLine
-    ? `<p class="muted small" style="margin-top:10px"><strong>${escapeHtml(recentFormLine)}</strong></p>`
-    : "";
+  const seasonHtml = season.gp != null || season.season
+    ? statBoxGridHtml([
+        ["GP", season.gp],
+        ["G", season.goals],
+        ["A", season.assists],
+        ["PTS", season.points],
+        ["PIM", season.pim],
+        ["+/-", season.plusMinus != null ? `${season.plusMinus > 0 ? "+" : ""}${season.plusMinus}` : null]
+      ])
+    : `<p class="muted small ep-empty">No full season totals available.</p>`;
+
+  const recentFormHtml = recentForm.gp != null
+    ? statBoxGridHtml([
+        ["GP", recentForm.gp],
+        ["G", recentForm.goals],
+        ["A", recentForm.assists],
+        ["PTS", recentForm.points],
+        ["+/-", recentForm.plusMinus != null ? `${recentForm.plusMinus > 0 ? "+" : ""}${recentForm.plusMinus}` : null]
+      ])
+    : `<p class="muted small ep-empty">No recent form data available.</p>`;
 
   const lastUpdated = epSync?.lastSuccessfulAt
     ? new Date(epSync.lastSuccessfulAt).toLocaleDateString()
     : "Never";
 
-  const linkHtml = `<p class="muted small" style="margin-top:10px"><a class="text-button" href="${escapeHtml(player.eliteProspects)}" target="_blank" rel="noopener noreferrer">View Elite Prospects Profile</a></p>`;
+  body.innerHTML = `
+    <div class="ep-layout">
+      <div class="ep-row">
+        <div class="ep-subcard">
+          <h4 class="ep-subcard-title">Bio</h4>
+          ${bioHtml}
+        </div>
+        <div class="ep-subcard">
+          <h4 class="ep-subcard-title">Current Team</h4>
+          ${contextHtml}
+        </div>
+      </div>
+      <div class="ep-subcard">
+        <h4 class="ep-subcard-title">Latest Season</h4>
+        ${seasonHtml}
+      </div>
+      <div class="ep-subcard">
+        <h4 class="ep-subcard-title">Recent Form${recentForm.spanGames ? ` <span class="ep-subcard-sub">Last ${escapeHtml(String(recentForm.spanGames))} Games</span>` : ""}</h4>
+        ${recentFormHtml}
+      </div>
+      <div class="ep-footer">
+        <span class="muted small">Last updated: ${escapeHtml(lastUpdated)}</span>
+        <a class="button secondary" href="${escapeHtml(player.eliteProspects)}" target="_blank" rel="noopener noreferrer">View Elite Prospects Profile</a>
+      </div>
+    </div>
+  `;
+}
 
-  body.innerHTML = `${factsHtml}${contextHtml}${seasonHtml}${recentFormHtml}<p class="muted small" style="margin-top:10px">Last updated: ${escapeHtml(lastUpdated)}</p>${linkHtml}`;
+function latestRatingsByCategory(ratings) {
+  const map = new Map();
+
+  ratings.forEach(function(item) {
+    const category = item.category || "Progress";
+    const time = item.createdAt ? new Date(item.createdAt).getTime() : 0;
+    const existing = map.get(category);
+
+    if (!existing || time >= existing._time) {
+      map.set(category, { ...item, _time: time });
+    }
+  });
+
+  return Array.from(map.values()).sort(function(a, b) {
+    return (b._time || 0) - (a._time || 0);
+  });
 }
 
 function renderProgress() {
@@ -1069,9 +1141,14 @@ function renderProgress() {
     );
 
   if (ratingsElement) {
+    const latestByCategory =
+      latestRatingsByCategory(
+        progressRatings
+      );
+
     ratingsElement.innerHTML =
-      progressRatings.length
-        ? progressRatings
+      latestByCategory.length
+        ? latestByCategory
             .map(function(item) {
               const rating =
                 Math.max(
@@ -1083,6 +1160,16 @@ function renderProgress() {
                     ) || 0
                   )
                 );
+
+              const date =
+                item.createdAt
+                  ? new Date(
+                      item.createdAt
+                    ).toLocaleDateString(
+                      undefined,
+                      { year: "numeric", month: "long" }
+                    )
+                  : "";
 
               return `
                 <article class="rating-card">
@@ -1099,22 +1186,32 @@ function renderProgress() {
                     </span>
                   </div>
 
-                  <div class="progress-track">
+                  <div class="progress-track lg">
                     <div
                       class="progress-fill"
                       style="width: ${rating}%"
                     ></div>
                   </div>
 
-                  <p
-                    class="muted small"
-                    style="margin-top: 9px"
-                  >
-                    ${escapeHtml(
-                      item.note ||
-                      "No note provided."
-                    )}
-                  </p>
+                  <div class="rating-meta">
+                    <span class="rating-meta-label">Latest evaluation</span>
+                    <span class="rating-meta-value">
+                      ${escapeHtml(
+                        item.evaluator ||
+                        "Collective Staff"
+                      )}${date ? ` · ${escapeHtml(date)}` : ""}
+                    </span>
+                  </div>
+
+                  <div class="rating-comment">
+                    <span class="rating-comment-label">Comment</span>
+                    <p>
+                      ${escapeHtml(
+                        item.note ||
+                        "No note provided."
+                      )}
+                    </p>
+                  </div>
                 </article>
               `;
             })

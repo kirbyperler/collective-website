@@ -110,23 +110,34 @@
       </section>
 
       <section class="page" id="profilePage">
-        <div class="workspace-header"><div><p class="eyebrow">Player Information</p><h2>Profile</h2></div><div class="segmented-control"><button class="segment active" data-profile-panel="details" onclick="setProfilePanel('details')">Details</button><button class="segment" data-profile-panel="progress" onclick="setProfilePanel('progress')">Progress</button></div></div>
-        <div class="profile-panel active" id="profileDetailsPanel">
-          <div class="two-column-workspace profile-workspace">
-            <article class="card avatar-card"><div class="card-header"><span>Player Photo</span></div><div class="avatar-editor"><div class="large-avatar-frame"><img id="profileAvatar" alt="Player avatar" hidden /><span id="profileAvatarPlaceholder">No photo uploaded</span></div><input class="field" id="avatarInput" type="file" accept="image/*" /><button class="button full" type="button" onclick="uploadAvatar()">Upload Photo</button><button class="button secondary full" type="button" onclick="deleteAvatar()">Remove Photo</button></div></article>
-            <article class="card"><div class="card-header"><span>Profile Information</span><span class="pill" id="profileStatusPill">Player</span></div><form class="dashboard-form" id="profileForm" onsubmit="saveProfile(event)">
-              <div class="form-row"><div class="form-group"><label for="firstName">First Name</label><input id="firstName" required /></div><div class="form-group"><label for="lastName">Last Name</label><input id="lastName" required /></div></div>
-              <div class="form-row"><div class="form-group"><label for="birthYear">Birth Year</label><input id="birthYear" inputmode="numeric" /></div><div class="form-group"><label for="position">Position</label><select id="position"><option value="">Select Position</option><option>Forward</option><option>Defense</option><option>Goalie</option></select></div></div>
-              <div class="form-row"><div class="form-group"><label for="currentTeam">Current Team</label><input id="currentTeam" /></div><div class="form-group"><label for="shoots">Shoots / Catches</label><select id="shoots"><option value="">Select</option><option>Left</option><option>Right</option></select></div></div>
-              <div class="form-row"><div class="form-group"><label for="height">Height</label><input id="height" placeholder="5'10&quot;" /></div><div class="form-group"><label for="weight">Weight</label><input id="weight" placeholder="175 lbs" /></div></div>
-              <div class="form-row"><div class="form-group"><label for="email">Email</label><input id="email" type="email" /></div><div class="form-group"><label for="phone">Phone</label><input id="phone" type="tel" /></div></div>
-              <div class="form-group"><label for="careerStatus">Career Status</label><select id="careerStatus" required><option value="Youth">Youth</option><option value="Prep">Prep</option><option value="Juniors">Juniors</option><option value="College">College</option><option value="Pro">Pro</option></select></div>
-              <div class="form-group"><label for="bio">Player Bio</label><textarea id="bio" placeholder="Background, goals, playing style..."></textarea></div><button class="button full" type="submit">Save Profile</button>
-            </form></article>
-            <article class="card" id="eliteProspectsCard"><div class="card-header"><span>Elite Prospects</span><span class="pill" id="epSyncStatusPill">Not synced</span></div><div class="card-body" id="eliteProspectsBody"></div></article>
-          </div>
+        <div class="workspace-header"><div><p class="eyebrow">Player Information</p><h2>Profile</h2></div><div class="segmented-control"><button class="segment active" data-profile-panel="details" onclick="setProfilePanel('details')">Details</button><button class="segment" data-profile-panel="eliteprospects" onclick="setProfilePanel('eliteprospects')">Elite Prospects</button><button class="segment" data-profile-panel="progress" onclick="setProfilePanel('progress')">Progress</button></div></div>
+
+        <div class="profile-workspace-stack">
+          <section class="profile-section" id="profileDetailsSection">
+            <div class="two-column-workspace profile-workspace">
+              <article class="card avatar-card"><div class="card-header"><span>Player Photo</span></div><div class="avatar-editor"><div class="large-avatar-frame"><img id="profileAvatar" alt="Player avatar" hidden /><span id="profileAvatarPlaceholder">No photo uploaded</span></div><input class="field" id="avatarInput" type="file" accept="image/*" /><button class="button full" type="button" onclick="uploadAvatar()">Upload Photo</button><button class="button secondary full" type="button" onclick="deleteAvatar()">Remove Photo</button></div></article>
+              <article class="card"><div class="card-header"><span>Profile Information</span><span class="pill" id="profileStatusPill">Player</span></div><form class="dashboard-form" id="profileForm" onsubmit="saveProfile(event)">
+                <div class="form-row"><div class="form-group"><label for="firstName">First Name</label><input id="firstName" required /></div><div class="form-group"><label for="lastName">Last Name</label><input id="lastName" required /></div></div>
+                <div class="form-row"><div class="form-group"><label for="birthYear">Birth Year</label><input id="birthYear" inputmode="numeric" /></div><div class="form-group"><label for="position">Position</label><select id="position"><option value="">Select Position</option><option>Forward</option><option>Defense</option><option>Goalie</option></select></div></div>
+                <div class="form-row"><div class="form-group"><label for="currentTeam">Current Team</label><input id="currentTeam" /></div><div class="form-group"><label for="shoots">Shoots / Catches</label><select id="shoots"><option value="">Select</option><option>Left</option><option>Right</option></select></div></div>
+                <div class="form-row"><div class="form-group"><label for="height">Height</label><input id="height" placeholder="5'10&quot;" /></div><div class="form-group"><label for="weight">Weight</label><input id="weight" placeholder="175 lbs" /></div></div>
+                <div class="form-row"><div class="form-group"><label for="email">Email</label><input id="email" type="email" /></div><div class="form-group"><label for="phone">Phone</label><input id="phone" type="tel" /></div></div>
+                <div class="form-group"><label for="careerStatus">Career Status</label><select id="careerStatus" required><option value="Youth">Youth</option><option value="Prep">Prep</option><option value="Juniors">Juniors</option><option value="College">College</option><option value="Pro">Pro</option></select></div>
+                <div class="form-group"><label for="bio">Player Bio</label><textarea id="bio" placeholder="Background, goals, playing style..."></textarea></div><button class="button full" type="submit">Save Profile</button>
+              </form></article>
+            </div>
+          </section>
+
+          <section class="profile-section" id="profileEliteProspectsSection">
+            <p class="section-heading">Elite Prospects</p>
+            <article class="card" id="eliteProspectsCard"><div class="card-header"><span>Player Scouting Profile</span><span class="pill" id="epSyncStatusPill">Not synced</span></div><div class="card-body" id="eliteProspectsBody"></div></article>
+          </section>
+
+          <section class="profile-section" id="profileProgressSection">
+            <p class="section-heading">Development Progress</p>
+            <article class="card progress-workspace-card"><div class="card-header"><span>Coaching Evaluations</span><span class="pill">Coach / Advisor / Admin ratings</span></div><div class="progress-layout-v2"><div id="progressRatings" class="rating-grid"></div><div id="progressHistory" class="progress-history"></div></div></article>
+          </section>
         </div>
-        <div class="profile-panel" id="profileProgressPanel"><article class="card progress-workspace-card"><div class="card-header"><span>Development Ratings</span><span class="pill">Coach / Advisor / Admin ratings</span></div><div class="progress-layout"><div id="progressRatings" class="rating-list"></div><div id="progressHistory" class="progress-history"></div></div></article></div>
       </section>
 
       <section class="page" id="recruitingPage">
