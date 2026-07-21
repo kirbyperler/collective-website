@@ -116,3 +116,134 @@
 .message-item,.file-item{padding:14px}
 @media(max-width:800px){.info-grid,.ep-fact-grid{grid-template-columns:1fr 1fr}.stat-box-grid{grid-template-columns:repeat(3,1fr)}}
 
+
+/* ===== FINAL PROFESSIONAL UI RESTORE =====
+   Keeps the original dashboard/card structure while improving readability,
+   screen fit, and responsive behavior. */
+html { min-width: 0; overflow-x: hidden; }
+body { overflow-x: hidden; font-size: 15px; }
+.player-shell { width: 100%; min-width: 0; }
+.main { width: 100%; min-width: 0; overflow: visible; }
+.page, .overview-grid, .card, .card-body { min-width: 0; }
+
+/* Preserve the screenshot's bento placement at full desktop sizes. */
+.overview-grid {
+  grid-template-columns: minmax(300px, 1.08fr) minmax(230px, .82fr) minmax(280px, 1fr) minmax(285px, 1fr);
+  grid-template-rows: minmax(370px, auto) minmax(270px, auto);
+  gap: 16px;
+  width: 100%;
+}
+.player-profile-card, .feature-stage, .messages-card, .progress-card,
+.recruiting-card, .files-card { min-height: 0; }
+.player-profile-card, .feature-stage, .messages-card { height: 100%; }
+.progress-card { height: 100%; }
+.recruiting-card, .files-card { min-height: 270px; }
+
+/* Readable typography and spacing without shrinking the interface. */
+.card-header { min-height: 54px; padding: 15px 18px; font-size: 13px; }
+.card-body { padding: 18px; }
+.profile-copy h1 { font-size: clamp(26px, 2vw, 34px); line-height: 1.05; overflow-wrap: anywhere; }
+.profile-copy p, .muted, .small { font-size: 13px; }
+.section-label { font-size: 12px; }
+.open-button, .text-button { font-size: 12px; }
+.card-footer-button { min-height: 48px; padding: 0 18px; font-size: 15px; }
+.card-footer-button:hover, .open-button:hover, .text-button:hover { color: #ff514a; }
+
+/* Keep facts readable and prevent values from being clipped. */
+.profile-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; }
+.fact-box { display: grid; grid-template-columns: minmax(72px, auto) minmax(0, 1fr); align-items: baseline; font-size: 13px; }
+.fact-box span { white-space: nowrap; }
+.fact-box strong { text-align: right; overflow-wrap: anywhere; }
+
+/* Concise Elite Prospects overview inside the original Player Profile card. */
+.overview-ep-summary {
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 9px;
+}
+.overview-ep-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.overview-ep-heading strong { font-size: 12px; text-transform: uppercase; letter-spacing: .7px; }
+.overview-ep-sync { color: var(--green); font-size: 11px; font-weight: 700; }
+.overview-ep-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
+.overview-ep-item { min-width: 0; display: grid; gap: 2px; }
+.overview-ep-item span { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .55px; }
+.overview-ep-item strong { color: var(--cream); font-size: 13px; line-height: 1.3; overflow-wrap: anywhere; }
+.overview-ep-empty { color: var(--dim); font-size: 13px; line-height: 1.45; }
+
+/* Previews should be concise, but never hide content because of parent height. */
+.message-list, .mini-list, .progress-preview { overflow: visible; }
+.preview-list { overflow: visible; }
+.preview-row { min-height: 52px; }
+.preview-row p { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.progress-row:last-child { margin-bottom: 0; }
+
+/* Workspace pages use the page scrollbar; only genuinely long lists scroll. */
+.workspace-list.inside-card, .file-grid, .progress-history {
+  max-height: min(66vh, 700px);
+  overscroll-behavior: contain;
+}
+.two-column-workspace, .recruiting-grid, .profile-workspace, .progress-layout-v2 { min-width: 0; }
+.info-row strong, .ep-fact strong, .message-item, .file-item, .program-item { overflow-wrap: anywhere; }
+
+/* Professional focus and interaction states. */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid rgba(214,47,42,.8);
+  outline-offset: 2px;
+}
+.button, .card-footer-button, .open-button, .side-link { transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease; }
+.button:hover { transform: translateY(-1px); }
+
+/* Laptop: keep the same hierarchy in two columns instead of squeezing cards. */
+@media (max-width: 1450px) {
+  .overview-grid {
+    grid-template-columns: minmax(300px, 1.05fr) minmax(250px, .85fr) minmax(300px, 1fr);
+    grid-template-rows: auto;
+  }
+  .player-profile-card { grid-column: 1; grid-row: 1; }
+  .feature-stage { grid-column: 2; grid-row: 1; }
+  .messages-card { grid-column: 3; grid-row: 1; }
+  .recruiting-card { grid-column: 1 / 3; grid-row: 2; }
+  .files-card { grid-column: 3; grid-row: 2; }
+  .progress-card { grid-column: 1 / -1; grid-row: 3; }
+  .progress-preview { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+}
+
+@media (max-width: 1080px) {
+  :root { --sidebar: 180px; }
+  .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .player-profile-card, .feature-stage, .messages-card, .files-card { grid-column: auto; grid-row: auto; }
+  .recruiting-card, .progress-card { grid-column: 1 / -1; grid-row: auto; }
+  .feature-stage { min-height: 320px; }
+  .profile-workspace { grid-template-columns: minmax(250px, 320px) minmax(0, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .player-shell { grid-template-rows: var(--topbar) auto var(--footer); }
+  .main { padding: 16px 14px 36px; }
+  .overview-grid { grid-template-columns: 1fr; }
+  .player-profile-card, .feature-stage, .messages-card, .progress-card, .recruiting-card, .files-card { grid-column: 1; grid-row: auto; }
+  .feature-stage { min-height: 300px; }
+  .profile-workspace, .two-column-workspace, .recruiting-grid, .progress-layout-v2 { grid-template-columns: 1fr; }
+  .segmented-control { width: 100%; overflow-x: auto; }
+  .segment { flex: 1 0 auto; }
+}
+
+@media (max-width: 560px) {
+  :root { --topbar: 64px; --footer: 48px; }
+  .topbar { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .logo-img { max-width: 128px; height: 24px; }
+  .logout-button { margin-right: 10px; padding: 8px 11px; }
+  .main { padding: 12px 10px 28px; }
+  .card-header { padding: 13px 14px; }
+  .card-body { padding: 15px; }
+  .profile-primary { align-items: flex-start; }
+  .profile-image-placeholder { width: 76px; height: 98px; }
+  .profile-copy h1 { font-size: 25px; }
+  .profile-facts, .overview-ep-grid, .info-grid, .ep-fact-grid { grid-template-columns: 1fr; }
+  .fact-box { grid-template-columns: minmax(82px, auto) minmax(0, 1fr); }
+  .stat-box-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .footer { padding: 0 14px; }
+  .footer strong { font-size: 15px; }
+}

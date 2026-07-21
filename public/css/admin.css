@@ -280,3 +280,96 @@ textarea { resize: vertical; min-height: 110px; }
   .info-grid, .ep-fact-grid { grid-template-columns: 1fr 1fr; }
   .stat-box-grid { grid-template-columns: repeat(3, 1fr); }
 }
+/* ===== FINAL PROFESSIONAL UI RESTORE =====
+   Preserves the original admin card placement while improving clarity and fit. */
+html { min-width: 0; overflow-x: hidden; }
+body { overflow-x: hidden; font-size: 15px; }
+.admin-shell, .main, .page, .overview-grid, .card, .card-body { min-width: 0; }
+.main { width: 100%; overflow: visible; padding: 22px 22px 52px; }
+
+.card-header { min-height: 54px; padding: 14px 16px; font-size: 13px; }
+.card-body { padding: 16px; }
+.muted, .small { font-size: 13px; }
+.open-button, .text-button { font-size: 12px; }
+.button { min-height: 40px; font-weight: 650; }
+
+/* Original admin bento hierarchy, with content-driven heights. */
+.overview-grid {
+  grid-template-columns: minmax(240px, .88fr) minmax(300px, 1.08fr) minmax(300px, 1.08fr);
+  gap: 16px;
+  width: 100%;
+}
+.welcome-card { min-height: 190px; }
+.users-card, .inquiries-card { min-height: 390px; }
+.metrics-card { min-height: 260px; }
+.files-card, .messages-card { min-height: 280px; }
+.overview-card .card-body { min-height: 0; }
+.preview-list { max-height: 250px; }
+
+/* Information should wrap rather than disappear. */
+.preview-row, .user-button, .inquiry-item, .message-item, .file-item, .database-record,
+.info-row strong, .ep-fact strong { overflow-wrap: anywhere; }
+.preview-row > *, .user-button > *, .message-head-info > *, .file-head-info > * { min-width: 0; }
+.preview-row p, .user-button p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Make metrics readable at every width. */
+.metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.metric-box { min-height: 88px; }
+.metric-box span { font-size: 12px; }
+.metric-box strong { font-size: 28px; }
+.summary-number { font-size: 40px; }
+
+/* Forms remain behind their update actions and fit inside modals. */
+.admin-form { height: auto; overflow: visible; }
+.form-row { min-width: 0; }
+.form-group, .form-group input, .form-group select, .form-group textarea { min-width: 0; }
+.action-row { align-items: center; }
+
+/* Long workspace lists have controlled scrolling; full pages remain scrollable. */
+.workspace-list.inside-card, .database-results, .database-metric-list {
+  max-height: min(67vh, 720px);
+  overscroll-behavior: contain;
+}
+.two-column-workspace, .database-layout { min-width: 0; }
+
+/* Professional interaction states. */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid rgba(214,47,42,.8);
+  outline-offset: 2px;
+}
+.button, .open-button, .side-link, .metric-box { transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease; }
+.button:hover, .metric-box:hover { transform: translateY(-1px); }
+
+@media (max-width: 1180px) {
+  .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .welcome-card { grid-column: 1 / -1; }
+  .users-card, .inquiries-card, .metrics-card, .files-card, .messages-card { grid-column: auto; grid-row: auto; }
+  .metrics-card { grid-column: 1 / -1; }
+  .metrics-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  :root { --sidebar: 180px; }
+  .two-column-workspace, .database-layout { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 800px) {
+  .main { padding: 16px 14px 38px; }
+  .overview-grid { grid-template-columns: 1fr; }
+  .welcome-card, .users-card, .inquiries-card, .metrics-card, .files-card, .messages-card { grid-column: 1; grid-row: auto; min-height: 0; }
+  .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workspace-list.inside-card, .database-results, .database-metric-list { max-height: 55vh; }
+}
+
+@media (max-width: 520px) {
+  :root { --topbar: 64px; }
+  .topbar { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .logo-img { max-width: 128px; height: 24px; }
+  .logout-button { margin-right: 10px; padding: 8px 11px; }
+  .main { padding: 12px 10px 28px; }
+  .card-header { padding: 13px 14px; }
+  .card-body { padding: 14px; }
+  .metrics-grid, .info-grid, .ep-fact-grid { grid-template-columns: 1fr; }
+  .stat-box-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .action-row .button { width: 100%; }
+}

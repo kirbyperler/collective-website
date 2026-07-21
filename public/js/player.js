@@ -1054,9 +1054,43 @@ function renderEliteProspects() {
   const overviewSummary = seasonLine || recentFormLine || contextLine;
 
   if (overviewLine) {
-    overviewLine.textContent = overviewSummary
-      ? `Elite Prospects: ${overviewSummary}`
-      : "Elite Prospects: Not synced yet.";
+    const context = epData?.currentContext || {};
+    const season = epData?.latestSeason || {};
+    const recent = epData?.recentForm || {};
+    const overviewFacts = [
+      ["Team", context.team],
+      ["League", context.league],
+      ["Season", context.season],
+      [recent.spanGames ? `Last ${recent.spanGames} Games` : "Latest Season",
+        recent.points != null ? `${recent.points} PTS` :
+        season.points != null ? `${season.points} PTS` : null]
+    ].filter(function(item) {
+      return item[1] != null && item[1] !== "";
+    });
+
+    if (overviewFacts.length) {
+      overviewLine.innerHTML = `
+        <div class="overview-ep-heading">
+          <strong>Elite Prospects</strong>
+          <span class="overview-ep-sync">${epSync?.status === "success" ? "Synced" : "Linked"}</span>
+        </div>
+        <div class="overview-ep-grid">
+          ${overviewFacts.map(function(item) {
+            return `
+              <div class="overview-ep-item">
+                <span>${escapeHtml(item[0])}</span>
+                <strong>${escapeHtml(String(item[1]))}</strong>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    } else {
+      overviewLine.innerHTML = `
+        <div class="overview-ep-heading"><strong>Elite Prospects</strong></div>
+        <p class="overview-ep-empty">No synced player data yet.</p>
+      `;
+    }
   }
 
   if (statusPill) {
