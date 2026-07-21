@@ -800,6 +800,13 @@ async function programsRoute(
       });
     }
 
+    if (type === "interestedInPlayer") {
+      return res.status(403).json({
+        error:
+          "Only staff can manage programs interested in this player."
+      });
+    }
+
     const document = {
       playerId,
 
@@ -850,6 +857,26 @@ async function programsRoute(
     return res.status(400).json({
       error:
         "Valid program ID is required."
+    });
+  }
+
+  const existing =
+    await collection.findOne({
+      _id: id,
+      playerId
+    });
+
+  if (!existing) {
+    return res.status(404).json({
+      error:
+        "Program not found."
+    });
+  }
+
+  if (existing.type === "interestedInPlayer") {
+    return res.status(403).json({
+      error:
+        "Only staff can manage programs interested in this player."
     });
   }
 

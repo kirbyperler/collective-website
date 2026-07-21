@@ -3,6 +3,7 @@ const ADMIN_API = {
   messages: "/api/admin?action=messages",
   acceptInquiry: "/api/admin?action=accept-inquiry",
   progress: "/api/admin?action=progress",
+  programs: "/api/admin?action=programs",
   refreshEliteProspects: "/api/admin?action=refreshEliteProspects",
   inquiries: "/api/inquiries",
   files: "/api/files?action=files",
@@ -530,11 +531,11 @@ function renderUserWorkspace() {
 }
 
 function openUser(id) {
-  selectUser(id);
+  selectUser(id, { skipHistory: true });
   showPage("users");
 }
 
-function selectUser(id) {
+function selectUser(id, options = {}) {
   selectedUserId = id;
 
   const user =
@@ -598,6 +599,12 @@ function selectUser(id) {
   renderUserSummary(user);
 
   renderUserWorkspace();
+
+  if (!options.skipHistory) {
+    pushNavState({ user: id });
+  } else {
+    setNavState({ user: id });
+  }
 }
 
 function renderUserSummary(user) {
@@ -623,6 +630,7 @@ function renderUserSummary(user) {
 
   document.getElementById("manageCategoriesButton")?.classList.toggle("hidden", !isPlayer);
   document.getElementById("updateProgressButton")?.classList.toggle("hidden", !isPlayer);
+  document.getElementById("manageRecruitingButton")?.classList.toggle("hidden", !isPlayer);
 
   body.innerHTML = `
     <div class="message-head-info" style="margin-bottom: 14px;">
@@ -655,25 +663,26 @@ function renderUserSummary(user) {
 
 function startNewUser() {
   resetUserForm();
+  setNavState({ user: null });
   openEditUserModal();
 }
 
-function openEditUserModal() {
+function openEditUserModal(options = {}) {
   const title = document.getElementById("userFormTitle");
   if (title) {
     title.textContent = selectedUserId ? "Edit User" : "Add User";
   }
-  openModalWithNode(selectedUserId ? "Edit User" : "Add User", "userFormCard");
+  openModalWithNode(selectedUserId ? "Edit User" : "Add User", "userFormCard", options);
 }
 
-function openManageCategoriesModal() {
+function openManageCategoriesModal(options = {}) {
   renderProgressCategoryManager();
-  openModalWithNode("Manage Categories", "categoryManagerSection", { wide: true });
+  openModalWithNode("Manage Categories", "categoryManagerSection", { wide: true, ...options });
 }
 
-function openUpdateProgressModal() {
+function openUpdateProgressModal(options = {}) {
   renderProgressRatingEditor();
-  openModalWithNode("Update Player Progress", "playerRatingSection", { wide: true });
+  openModalWithNode("Update Player Progress", "playerRatingSection", { wide: true, ...options });
 }
 
 function openFilesForSelectedUser() {
@@ -690,7 +699,7 @@ function openFilesForSelectedUser() {
 function openMessagesForSelectedUser() {
   if (!selectedUserId) return;
 
-  showPage("messages");
+  showPage("messages", { skipHistory: true });
 
   const select = document.getElementById("messageRecipient");
   if (select) {
@@ -700,6 +709,164 @@ function openMessagesForSelectedUser() {
 
   openModalWithNode("New Message", "sendMessageCard");
 }
+
+let recruitingPrograms = { interestedInPlayer: [], playerInterested: [] };
+
+function recruitingLevelOptions(careerStatus) {
+  const map = {
+    Youth: ["Prep", "Juniors", "College"],
+    Prep: ["Juniors", "College"],
+    Juniors: ["College"],
+    College: ["Pro"],
+    Pro: ["Pro"]
+  };
+  return map[careerStatus] || ["Pro"];
+}
+
+function renderProgramList(elementId, list, { editable }) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  element.innerHTML = list.length
+    ? list.map(function(program) {
+        const id = program.id || program._id || "";
+        return `
+          <div class="program-item">
+            <div class="program-head">
+              <div>
+                <strong>${escapeHtml(program.name || "Program")}</strong>
+                <p class="muted small">${escapeHtml(program.level || "Program")}</p>
+              </div>
+              ${editable ? `<button class="text-button" type="button" onclick="deleteAdminProgram('${escapeHtml(id)}')">Delete</button>` : ""}
+            </div>
+            <p class="muted small">${escapeHtml(program.contact || program.note || "No contact information")}</p>
+          </div>
+        `;
+      }).join("")
+    : `<p class="muted small">No programs added.</p>`;
+}
+
+async function loadRecruitingPrograms(playerId) {
+  try {
+    const response = await fetch(`${ADMIN_API.programs}&playerId=${encodeURIComponent(playerId)}`, { credentials: "same-origin" });
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.error || data.message || "Failed to load recruiting programs.");
+    recruitingPrograms = {
+      interestedInPlayer: Array.isArray(data.interestedInPlayer) ? data.interestedInPlayer : [],
+      playerInterested: Array.isArray(data.playerInterested) ? data.playerInterested : []
+    };
+  } catch (error) {
+    console.error("Load recruiting programs error:", error);
+    recruitingPrograms = { interestedInPlayer: [], playerInterested: [] };
+  }
+}
+
+async function renderRecruitingAdminSection() {
+  if (!selectedUserId) return;
+  const user = users.find(function(item) { return item.id === selectedUserId; });
+
+  const levelSelect = document.getElementById("adminProgramLevel");
+  if (levelSelect) {
+    const levels = recruitingLevelOptions(user?.careerStatus || "Youth");
+    levelSelect.innerHTML = levels.map(function(level) {
+      return `<option value="${escapeHtml(level)}">${escapeHtml(level)}</option>`;
+    }).join("");
+  }
+
+  await loadRecruitingPrograms(selectedUserId);
+  renderProgramList("adminInterestedInPlayerList", recruitingPrograms.interestedInPlayer, { editable: true });
+  renderProgramList("adminPlayerInterestedList", recruitingPrograms.playerInterested, { editable: false });
+}
+
+function openManageRecruitingModal(options = {}) {
+  if (!selectedUserId) return;
+  renderRecruitingAdminSection();
+  openModalWithNode("Manage Recruiting", "recruitingAdminSection", { wide: true, ...options });
+}
+
+async function addAdminProgram(event) {
+  event.preventDefault();
+  if (!selectedUserId) return;
+
+  const name = document.getElementById("adminProgramName")?.value.trim() || "";
+  const level = document.getElementById("adminProgramLevel")?.value || "";
+  const contact = document.getElementById("adminProgramContact")?.value.trim() || "";
+
+  try {
+    const response = await fetch(ADMIN_API.programs, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerId: selectedUserId, name, level, contact })
+    });
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.error || data.message || "Failed to add program.");
+
+    event.target.reset();
+    await renderRecruitingAdminSection();
+  } catch (error) {
+    console.error("Add admin program error:", error);
+    alert(error.message);
+  }
+}
+
+async function deleteAdminProgram(id) {
+  if (!selectedUserId) return;
+  if (!confirm("Delete this program?")) return;
+
+  try {
+    const response = await fetch(ADMIN_API.programs, {
+      method: "DELETE",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerId: selectedUserId, id })
+    });
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.error || data.message || "Failed to delete program.");
+
+    await renderRecruitingAdminSection();
+  } catch (error) {
+    console.error("Delete admin program error:", error);
+    alert(error.message);
+  }
+}
+
+const ADMIN_MODAL_OPENERS = {
+  userFormCard: function(state) {
+    if (state.user) openEditUserModal({ skipHistory: true });
+    else startNewUserSilently();
+  },
+  categoryManagerSection: function() { openManageCategoriesModal({ skipHistory: true }); },
+  playerRatingSection: function() { openUpdateProgressModal({ skipHistory: true }); },
+  sendMessageCard: function() { openModalWithNode("New Message", "sendMessageCard", { skipHistory: true }); },
+  recruitingAdminSection: function() { openManageRecruitingModal({ skipHistory: true }); }
+};
+
+function startNewUserSilently() {
+  resetUserForm();
+  openEditUserModal({ skipHistory: true });
+}
+
+function reopenAdminModal(nodeId, state) {
+  const opener = ADMIN_MODAL_OPENERS[nodeId];
+  if (!opener || !document.getElementById(nodeId)) {
+    closeModal({ skipHistory: true });
+    return;
+  }
+  opener(state);
+}
+
+window.applyNavState = function(state) {
+  showPage(state.page || "overview", { skipHistory: true });
+  if (state.user && state.user !== selectedUserId) {
+    selectUser(state.user, { skipHistory: true });
+  }
+  if (state.modal) {
+    reopenAdminModal(state.modal, state);
+  } else {
+    closeModal({ skipHistory: true });
+  }
+};
 
 function renderEliteProspectsAdminSection(user) {
   const section =
@@ -723,8 +890,16 @@ function renderEliteProspectsAdminSection(user) {
 
   section.classList.remove("hidden");
 
+  const syncBadge = document.getElementById("eliteProspectsSyncBadge");
+  if (syncBadge) {
+    const status = user.epSync?.status === "success" ? "Synced" : user.epSync?.status === "error" ? "Sync failed" : "Not synced";
+    syncBadge.textContent = status;
+    syncBadge.classList.toggle("badge-synced", status === "Synced");
+    syncBadge.classList.toggle("badge-manual", status === "Sync failed");
+  }
+
   if (!user.eliteProspects) {
-    body.innerHTML = `<p>No Elite Prospects profile linked.</p>`;
+    body.innerHTML = `<p class="muted small ep-empty">No Elite Prospects profile linked.</p>`;
     return;
   }
 
@@ -735,60 +910,72 @@ function renderEliteProspectsAdminSection(user) {
   const recentForm = epData?.recentForm || {};
   const context = epData?.currentContext || {};
 
-  const bioLine = [
-    bio.fullName,
-    bio.position,
-    bio.shoots,
-    bio.height,
-    bio.weight
-  ].filter(Boolean).map(escapeHtml).join(" · ");
+  const contextFacts = [
+    ["Team", context.team],
+    ["League", context.league],
+    ["Season", context.season],
+    ["Position", bio.position]
+  ].filter(fact => fact[1] != null && fact[1] !== "");
 
-  const contextLine = [
-    context.team,
-    context.league,
-    context.season
-  ].filter(Boolean).map(escapeHtml).join(" · ");
+  const hasFullSeason = season.gp != null;
 
-  const seasonStatsLine = [
-    season.gp != null ? `${season.gp} GP` : null,
-    season.goals != null ? `${season.goals}G` : null,
-    season.assists != null ? `${season.assists}A` : null,
-    season.points != null ? `${season.points}PTS` : null,
-    season.pim != null ? `${season.pim} PIM` : null,
-    season.plusMinus != null ? `${season.plusMinus > 0 ? "+" : ""}${season.plusMinus}` : null
-  ].filter(Boolean).join(" ");
+  const infoFacts = [
+    ["DOB", bio.dateOfBirth],
+    ["Age", bio.age],
+    ["Height", bio.height],
+    ["Weight", bio.weight],
+    ["Shoots", bio.shoots],
+    ["Birthplace", bio.placeOfBirth],
+    ["Nationality", bio.nationality]
+  ].filter(fact => fact[1] != null && fact[1] !== "");
 
-  const seasonLine = [
-    season.team,
-    season.league,
-    season.season
-  ].filter(Boolean).map(escapeHtml).join(" · ");
+  const factGrid = facts => `<div class="ep-fact-grid">${facts.map(fact =>
+    `<div class="ep-fact"><span>${escapeHtml(fact[0])}</span><strong>${escapeHtml(String(fact[1]))}</strong></div>`
+  ).join("")}</div>`;
 
-  const recentFormStatsLine = [
-    recentForm.gp != null ? `${recentForm.gp} GP` : null,
-    recentForm.goals != null ? `${recentForm.goals}G` : null,
-    recentForm.assists != null ? `${recentForm.assists}A` : null,
-    recentForm.points != null ? `${recentForm.points}PTS` : null,
-    recentForm.plusMinus != null ? `${recentForm.plusMinus > 0 ? "+" : ""}${recentForm.plusMinus}` : null
-  ].filter(Boolean).join(" ");
+  const statBoxes = boxes => `<div class="stat-box-grid">${boxes.map(box =>
+    `<div class="stat-box"><strong>${box[1] != null ? escapeHtml(String(box[1])) : "—"}</strong><span>${escapeHtml(box[0])}</span></div>`
+  ).join("")}</div>`;
 
   const lastUpdated =
     epSync?.lastSuccessfulAt
       ? new Date(epSync.lastSuccessfulAt).toLocaleString()
       : "Never";
 
-  const status =
-    epSync?.status === "success" ? "Synced" :
-    epSync?.status === "error" ? "Sync failed" :
-    "Not synced";
-
   body.innerHTML = `
-    <p><a class="text-button" href="${escapeHtml(user.eliteProspects)}" target="_blank" rel="noopener noreferrer">View Elite Prospects Profile</a></p>
-    ${bioLine ? `<p>${bioLine}</p>` : `<p>No biography data yet.</p>`}
-    ${contextLine ? `<p>${contextLine}</p>` : ""}
-    ${seasonLine ? `<p><strong>Latest Season:</strong> ${seasonLine}${seasonStatsLine ? ` — ${escapeHtml(seasonStatsLine)}` : ""}</p>` : `<p>No full season totals available.</p>`}
-    ${recentFormStatsLine ? `<p><strong>Last ${escapeHtml(String(recentForm.spanGames))} Games:</strong> ${escapeHtml(recentFormStatsLine)}</p>` : ""}
-    <p>Last updated: ${escapeHtml(lastUpdated)} · Status: ${escapeHtml(status)}</p>
+    <div class="ep-layout">
+      <div class="ep-subcard">
+        <h4 class="ep-subcard-title">Current Context</h4>
+        ${contextFacts.length ? factGrid(contextFacts) : `<p class="muted small ep-empty">No current team on file.</p>`}
+      </div>
+      ${hasFullSeason ? `
+        <div class="ep-subcard">
+          <h4 class="ep-subcard-title">Latest Full Season${season.season ? ` <span class="ep-subcard-sub">${escapeHtml(String(season.season))}</span>` : ""}</h4>
+          ${statBoxes([
+            ["GP", season.gp], ["G", season.goals], ["A", season.assists],
+            ["PTS", season.points], ["PIM", season.pim],
+            ["+/-", season.plusMinus != null ? `${season.plusMinus > 0 ? "+" : ""}${season.plusMinus}` : null]
+          ])}
+        </div>
+      ` : ""}
+      ${recentForm.gp != null ? `
+        <div class="ep-subcard">
+          <h4 class="ep-subcard-title">Recent Form <span class="ep-subcard-sub">Last ${escapeHtml(String(recentForm.spanGames))} Games</span></h4>
+          ${statBoxes([
+            ["GP", recentForm.gp], ["G", recentForm.goals], ["A", recentForm.assists], ["PTS", recentForm.points],
+            ["+/-", recentForm.plusMinus != null ? `${recentForm.plusMinus > 0 ? "+" : ""}${recentForm.plusMinus}` : null]
+          ])}
+        </div>
+      ` : ""}
+      <div class="ep-subcard">
+        <h4 class="ep-subcard-title">Player Information</h4>
+        ${infoFacts.length ? factGrid(infoFacts) : `<p class="muted small ep-empty">No player information on file.</p>`}
+      </div>
+      <div class="ep-footer">
+        <span class="muted small">Synced from Elite Prospects · Last updated ${escapeHtml(lastUpdated)}</span>
+        <a class="button secondary" href="${escapeHtml(user.eliteProspects)}" target="_blank" rel="noopener noreferrer">View Elite Prospects Profile</a>
+      </div>
+    </div>
   `;
 }
 
@@ -884,6 +1071,9 @@ function renderProgressCategoryManager() {
       : `<p class="muted small">No categories yet. Add one below.</p>`;
 }
 
+let progressEditorDirty = new Set();
+let progressEditorOriginals = {};
+
 function renderProgressRatingEditor() {
   const editor = document.getElementById("progressRatingEditor");
   if (!editor || !selectedUserId) return;
@@ -892,27 +1082,143 @@ function renderProgressRatingEditor() {
     return (a.order ?? 0) - (b.order ?? 0);
   });
 
+  progressEditorDirty = new Set();
+  progressEditorOriginals = {};
+
   editor.innerHTML =
     sorted.length
       ? sorted
           .map(function(category) {
+            const id = escapeHtml(category.id || category._id);
             const latest = latestRatingForCategory(category.name);
-            const safeName = escapeHtml(category.name).replaceAll("'", "\\'");
+            const ratingValue = latest ? String(Math.round(latest.rating)) : "";
+            const noteValue = latest?.note || "";
+
+            progressEditorOriginals[id] = { rating: ratingValue, note: noteValue, categoryName: category.name };
 
             return `
-              <div class="form-group progress-rating-row">
-                <label class="field-label">${escapeHtml(category.name)}</label>
+              <div class="form-group progress-rating-row" id="rating-row-${id}">
+                <label class="field-label">${escapeHtml(category.name)} <span class="badge hidden" id="dirty-${id}">Unsaved</span></label>
                 <div class="form-row">
-                  <input class="field" type="number" min="0" max="100" id="rating-${escapeHtml(category.id || category._id)}" value="${latest ? Math.round(latest.rating) : ""}" placeholder="0-100" />
+                  <input class="field" type="number" min="0" max="100" id="rating-${id}" value="${ratingValue}" placeholder="0-100" oninput="markRatingDirty('${id}')" />
                 </div>
-                <textarea class="field" id="note-${escapeHtml(category.id || category._id)}" placeholder="Optional note...">${escapeHtml(latest?.note || "")}</textarea>
-                <button class="button secondary" type="button" onclick="savePlayerRating('${safeName}', '${escapeHtml(category.id || category._id)}')">Save Rating</button>
+                <textarea class="field" id="note-${id}" placeholder="Optional note..." oninput="markRatingDirty('${id}')">${escapeHtml(noteValue)}</textarea>
                 ${latest ? `<p class="muted small">Last updated ${escapeHtml(new Date(latest.createdAt).toLocaleDateString())} by ${escapeHtml(latest.evaluator || "Staff")}</p>` : ""}
               </div>
             `;
           })
           .join("")
       : "";
+
+  updateSaveAllRatingsState();
+  setProgressSaveStatus("");
+}
+
+function markRatingDirty(id) {
+  const original = progressEditorOriginals[id];
+  if (!original) return;
+
+  const ratingInput = document.getElementById(`rating-${id}`);
+  const noteInput = document.getElementById(`note-${id}`);
+  const isDirty = (ratingInput?.value || "") !== original.rating || (noteInput?.value || "") !== original.note;
+
+  if (isDirty) progressEditorDirty.add(id);
+  else progressEditorDirty.delete(id);
+
+  document.getElementById(`dirty-${id}`)?.classList.toggle("hidden", !isDirty);
+  updateSaveAllRatingsState();
+}
+
+function updateSaveAllRatingsState() {
+  const button = document.getElementById("saveAllRatingsButton");
+  if (button) {
+    button.disabled = progressEditorDirty.size === 0;
+    button.textContent = "Save All Changes";
+  }
+
+  if (progressEditorDirty.size) {
+    setProgressSaveStatus(`${progressEditorDirty.size} unsaved change${progressEditorDirty.size === 1 ? "" : "s"}.`);
+  }
+}
+
+function setProgressSaveStatus(message, isError = false) {
+  const status = document.getElementById("progressSaveStatus");
+  if (!status) return;
+  status.textContent = message;
+  status.style.color = isError ? "#f0a09d" : "";
+}
+
+function hasUnsavedRatingChanges() {
+  return progressEditorDirty.size > 0;
+}
+
+window.confirmModalClose = function() {
+  const bodyEl = document.getElementById("modalBody");
+  if (bodyEl?.firstElementChild?.id === "playerRatingSection" && hasUnsavedRatingChanges()) {
+    return confirm("You have unsaved rating changes. Close without saving?");
+  }
+  return true;
+};
+
+function resetProgressRatingEditor() {
+  if (progressEditorDirty.size && !confirm("Discard unsaved rating changes?")) return;
+  renderProgressRatingEditor();
+}
+
+async function saveAllPlayerRatings() {
+  if (!selectedUserId || !progressEditorDirty.size) return;
+
+  const ratings = [];
+  for (const id of progressEditorDirty) {
+    const original = progressEditorOriginals[id];
+    const ratingInput = document.getElementById(`rating-${id}`);
+    const noteInput = document.getElementById(`note-${id}`);
+    const rating = Number(ratingInput?.value);
+
+    if (!Number.isFinite(rating) || rating < 0 || rating > 100) {
+      setProgressSaveStatus(`Enter a rating between 0 and 100 for "${original.categoryName}".`, true);
+      return;
+    }
+
+    ratings.push({ category: original.categoryName, rating, note: noteInput?.value.trim() || "" });
+  }
+
+  const button = document.getElementById("saveAllRatingsButton");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Saving...";
+  }
+  setProgressSaveStatus("Saving...");
+
+  try {
+    const response = await fetch(ADMIN_API.progress, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerId: selectedUserId, ratings })
+    });
+
+    const data = await readApiResponse(response);
+    if (!response.ok) throw new Error(data.error || data.message || "Failed to save ratings.");
+
+    await loadPlayerProgress(selectedUserId);
+
+    if (data.errors?.length) {
+      renderProgressRatingEditor();
+      setProgressSaveStatus(`Saved ${data.saved?.length || 0}, but failed: ${data.errors.map(function(item) { return item.category; }).join(", ")}.`, true);
+      return;
+    }
+
+    renderProgressRatingEditor();
+    setProgressSaveStatus("All changes saved.");
+  } catch (error) {
+    console.error("Save all ratings error:", error);
+    setProgressSaveStatus(error.message, true);
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Save All Changes";
+    }
+  }
 }
 
 async function addProgressCategory() {
@@ -1032,42 +1338,6 @@ async function moveProgressCategory(id, direction) {
   }
 }
 
-async function savePlayerRating(categoryName, categoryId) {
-  if (!selectedUserId) return;
-
-  const ratingInput = document.getElementById(`rating-${categoryId}`);
-  const noteInput = document.getElementById(`note-${categoryId}`);
-  const rating = Number(ratingInput?.value);
-
-  if (!Number.isFinite(rating) || rating < 0 || rating > 100) {
-    alert("Enter a rating between 0 and 100.");
-    return;
-  }
-
-  try {
-    const response = await fetch(ADMIN_API.progress, {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        playerId: selectedUserId,
-        category: categoryName,
-        rating,
-        note: noteInput?.value.trim() || ""
-      })
-    });
-
-    const data = await readApiResponse(response);
-    if (!response.ok) throw new Error(data.error || data.message || "Failed to save rating.");
-
-    await loadPlayerProgress(selectedUserId);
-    renderProgressRatingEditor();
-  } catch (error) {
-    console.error("Save player rating error:", error);
-    alert(error.message);
-  }
-}
-
 async function refreshEliteProspects() {
   if (!selectedUserId) {
     alert("Select a player first.");
@@ -1101,7 +1371,7 @@ async function refreshEliteProspects() {
     }
 
     await loadUsers();
-    selectUser(selectedUserId);
+    selectUser(selectedUserId, { skipHistory: true });
 
     alert("Elite Prospects data refreshed.");
   } catch (error) {
@@ -1258,7 +1528,7 @@ async function saveUser(event) {
     }
 
     await loadUsers();
-    selectUser(selectedUserId);
+    selectUser(selectedUserId, { skipHistory: true });
     closeModal();
 
     alert(
@@ -2535,6 +2805,7 @@ async function initializeAdminDashboard() {
   ]);
 
   renderEverything();
+  initNavHistory();
 }
 
 initializeAdminDashboard();

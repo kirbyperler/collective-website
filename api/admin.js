@@ -166,6 +166,31 @@ async function progressRoute(req, res, db, session) {
     return res.status(200).json({ ratings: (await collection.find({ playerId }).sort({ createdAt: -1 }).toArray()).map(serialize) });
   }
   if (req.method === "POST") {
+    // Batch save: the admin progress editor submits every changed category
+    // rating in one request instead of one request per category.
+    if (Array.isArray(req.body?.ratings)) {
+      if (!playerId) return res.status(400).json({ error: "Valid playerId is required." });
+      const now = new Date();
+      const saved = [];
+      const errors = [];
+      for (const entry of req.body.ratings) {
+        const rating = Number(entry?.rating);
+        const category = cleanText(entry?.category, 100);
+        if (!category || !Number.isFinite(rating) || rating < 0 || rating > 100) {
+          errors.push({ category: entry?.category || "", error: "A 0-100 rating is required." });
+          continue;
+        }
+        const document = { playerId, category, rating, note: cleanText(entry?.note, 1000), evaluator: session.role, evaluatorId: toObjectId(session.userId), evaluatorRole: session.role, createdAt: now };
+        try {
+          const result = await collection.insertOne(document);
+          saved.push(serialize({ ...document, _id: result.insertedId }));
+        } catch (error) {
+          errors.push({ category, error: "Failed to save this rating." });
+        }
+      }
+      return res.status(saved.length || !errors.length ? 200 : 400).json({ saved, errors });
+    }
+
     const rating = Number(req.body?.rating);
     const category = cleanText(req.body?.category, 100);
     if (!playerId || !category || !Number.isFinite(rating) || rating < 0 || rating > 100) return res.status(400).json({ error: "playerId, category, and a 0-100 rating are required." });
@@ -177,6 +202,52 @@ async function progressRoute(req, res, db, session) {
   if (!id) return res.status(400).json({ error: "Valid rating ID is required." });
   const result = await collection.deleteOne({ _id: id });
   return result.deletedCount ? res.status(200).json({ success: true }) : res.status(404).json({ error: "Rating not found." });
+}
+
+async function programsRoute(req, res, db) {
+  if (!allowMethods(req, res, ["GET", "POST", "DELETE"])) return;
+
+  const playerId = toObjectId(req.method === "GET" ? req.query?.playerId : req.body?.playerId);
+  if (!playerId) return res.status(400).json({ error: "A valid playerId is required." });
+
+  const collection = db.collection("playerPrograms");
+
+  if (req.method === "GET") {
+    const records = await collection.find({ playerId }).sort({ createdAt: -1 }).toArray();
+    return res.status(200).json({
+      interestedInPlayer: records.filter(item => item.type === "interestedInPlayer").map(serialize),
+      playerInterested: records.filter(item => item.type === "playerInterested").map(serialize)
+    });
+  }
+
+  // Staff may only add/edit/delete "programs interested in the player" —
+  // the reverse list ("programs the player is interested in") stays
+  // player-managed; staff can view it via GET above but never write to it.
+  if (req.method === "POST") {
+    const name = cleanText(req.body?.name, 120);
+    if (!name) return res.status(400).json({ error: "A program name is required." });
+    const document = {
+      playerId,
+      type: "interestedInPlayer",
+      name,
+      level: cleanText(req.body?.level, 40),
+      contact: cleanText(req.body?.contact, 300),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    const result = await collection.insertOne(document);
+    return res.status(201).json({ program: serialize({ ...document, _id: result.insertedId }) });
+  }
+
+  const id = toObjectId(req.body?.id);
+  if (!id) return res.status(400).json({ error: "A valid program ID is required." });
+  const existing = await collection.findOne({ _id: id, playerId });
+  if (!existing) return res.status(404).json({ error: "Program not found." });
+  if (existing.type !== "interestedInPlayer") {
+    return res.status(403).json({ error: "Staff can only manage the programs interested in this player." });
+  }
+  const result = await collection.deleteOne({ _id: id, playerId });
+  return result.deletedCount ? res.status(200).json({ success: true }) : res.status(404).json({ error: "Program not found." });
 }
 
 async function acceptInquiry(req, res, db) {
@@ -286,12 +357,13 @@ module.exports = async function handler(req, res) {
       return syncEliteProspectsRoute(req, res, db);
     }
 
-    const session = route === "progress" ? requireStaff(req, res) : requireAdmin(req, res);
+    const session = (route === "progress" || route === "programs") ? requireStaff(req, res) : requireAdmin(req, res);
     if (!session) return;
     const db = await getDb();
     if (route === "users") return usersRoute(req, res, db);
     if (route === "messages") return messagesRoute(req, res, db, session);
     if (route === "progress") return progressRoute(req, res, db, session);
+    if (route === "programs") return programsRoute(req, res, db);
     if (route === "accept-inquiry") return acceptInquiry(req, res, db);
     if (route === "refresheliteprospects") return refreshEliteProspectsRoute(req, res, db);
     return res.status(404).json({ error: "Admin action not found." });

@@ -12,7 +12,7 @@ function escapeHtml(value = "") {
   });
 }
 
-function showPage(pageName) {
+function showPage(pageName, options = {}) {
   document.querySelectorAll(".page").forEach(function(page) {
     page.classList.remove("active");
   });
@@ -29,10 +29,82 @@ function showPage(pageName) {
   }
 
   document.getElementById("sidebar")?.classList.remove("open");
+
+  if (!options.skipHistory) {
+    pushNavState({ page: pageName, modal: null }, { replace: Boolean(options.replaceHistory) });
+  }
 }
 
 function toggleSidebar() {
   document.getElementById("sidebar")?.classList.toggle("open");
+}
+
+// --- Browser back/forward support -----------------------------------------
+// Tracks which page/user/profile-panel/modal is showing in `?page=&user=&
+// panel=&modal=` query params (hash is already used as a no-op anchor by the
+// nav links, so query params avoid colliding with that). pushState/
+// replaceState never reload the page; a `popstate` listener re-renders from
+// in-memory data instead of re-fetching.
+let navState = { page: null, user: null, panel: null, modal: null };
+
+function readLocationNavState() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    page: params.get("page") || null,
+    user: params.get("user") || null,
+    panel: params.get("panel") || null,
+    modal: params.get("modal") || null
+  };
+}
+
+function buildNavUrl(state) {
+  const params = new URLSearchParams();
+  if (state.page) params.set("page", state.page);
+  if (state.user) params.set("user", state.user);
+  if (state.panel) params.set("panel", state.panel);
+  if (state.modal) params.set("modal", state.modal);
+  const query = params.toString();
+  return query ? `${window.location.pathname}?${query}` : window.location.pathname;
+}
+
+// Updates in-memory nav state only — used by an "inner" step of a compound
+// action (e.g. selecting a user right before switching pages) so the final
+// step's pushNavState commits one combined history entry instead of two.
+function setNavState(patch) {
+  navState = { ...navState, ...patch };
+}
+
+function pushNavState(patch, { replace = false } = {}) {
+  navState = { ...navState, ...patch };
+  history[replace ? "replaceState" : "pushState"]({ ...navState }, "", buildNavUrl(navState));
+}
+
+// Called once after each dashboard's initial data load. Restores whatever
+// page/user/panel/modal the URL encodes (covers direct loads and refreshes),
+// then listens for Back/Forward. `window.applyNavState`, implemented per
+// dashboard (admin.js / player.js), knows how to re-render from state using
+// data already in memory.
+function initNavHistory() {
+  const initial = readLocationNavState();
+  navState = {
+    page: initial.page || "overview",
+    user: initial.user || null,
+    panel: initial.panel || null,
+    modal: initial.modal || null
+  };
+  history.replaceState({ ...navState }, "", buildNavUrl(navState));
+  window.applyNavState?.(navState, { isInitial: true });
+
+  window.addEventListener("popstate", function(event) {
+    const state = event.state || readLocationNavState();
+    navState = {
+      page: state.page || "overview",
+      user: state.user || null,
+      panel: state.panel || null,
+      modal: state.modal || null
+    };
+    window.applyNavState?.(navState, { isInitial: false });
+  });
 }
 
 function initials(name) {
@@ -72,12 +144,28 @@ function openModalWithNode(title, nodeId, options = {}) {
   panel?.classList.toggle("modal-wide", Boolean(options.wide));
   overlay.classList.add("open");
   document.body.classList.add("modal-open");
+
+  if (!options.skipHistory) {
+    pushNavState({ modal: nodeId });
+  } else {
+    setNavState({ modal: nodeId });
+  }
 }
 
-function closeModal() {
+function closeModal(options = {}) {
   const overlay = document.getElementById("modalOverlay");
   const bodyEl = document.getElementById("modalBody");
   if (!overlay || !bodyEl) return;
+
+  // A dashboard (e.g. the admin progress editor) can register a guard here
+  // to confirm before an explicit close discards unsaved edits. Back/
+  // Forward navigation (skipHistory) never blocks — the URL has already
+  // changed by the time this runs.
+  if (!options.skipHistory && !options.force && typeof window.confirmModalClose === "function" && !window.confirmModalClose()) {
+    return;
+  }
+
+  const wasOpen = overlay.classList.contains("open");
 
   const node = bodyEl.firstElementChild;
   if (node && node.__modalHome) {
@@ -87,6 +175,12 @@ function closeModal() {
 
   overlay.classList.remove("open");
   document.body.classList.remove("modal-open");
+
+  if (!options.skipHistory && wasOpen && navState.modal) {
+    pushNavState({ modal: null });
+  } else if (options.skipHistory) {
+    setNavState({ modal: null });
+  }
 }
 
 document.addEventListener("keydown", function(event) {

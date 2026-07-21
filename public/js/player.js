@@ -98,7 +98,7 @@ async function apiRequest(
   return data;
 }
 
-function setProfilePanel(panel) {
+function setProfilePanel(panel, options = {}) {
   const sectionIds = {
     details: "profileDetailsSection",
     eliteprospects: "profileEliteProspectsSection",
@@ -118,9 +118,42 @@ function setProfilePanel(panel) {
   requestAnimationFrame(function() {
     document
       .getElementById(sectionIds[panel] || "")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      ?.scrollIntoView({ behavior: options.skipHistory && options.instantScroll ? "auto" : "smooth", block: "start" });
   });
+
+  if (!options.skipHistory) {
+    pushNavState({ panel });
+  } else {
+    setNavState({ panel });
+  }
 }
+
+const PLAYER_MODAL_TITLES = {
+  profileFormCard: "Update Profile",
+  messageFormCard: "New Message",
+  fileFormCard: "Upload File"
+};
+
+function reopenPlayerModal(nodeId) {
+  const title = PLAYER_MODAL_TITLES[nodeId];
+  if (!title || !document.getElementById(nodeId)) {
+    closeModal({ skipHistory: true });
+    return;
+  }
+  openModalWithNode(title, nodeId, { skipHistory: true });
+}
+
+window.applyNavState = function(state, { isInitial } = {}) {
+  showPage(state.page || "overview", { skipHistory: true });
+  if (state.panel) {
+    setProfilePanel(state.panel, { skipHistory: true, instantScroll: isInitial });
+  }
+  if (state.modal) {
+    reopenPlayerModal(state.modal);
+  } else {
+    closeModal({ skipHistory: true });
+  }
+};
 
 function allowedRecruitingLevels(
   status
@@ -346,6 +379,7 @@ async function loadDashboard() {
     fillContacts();
     fillRecruitingLevels();
     renderEverything();
+    initNavHistory();
   } catch (error) {
     console.error(
       "Dashboard load error:",
@@ -1046,30 +1080,12 @@ function renderEliteProspects() {
   const recentForm = epData?.recentForm || {};
   const context = epData?.currentContext || {};
 
-  const bioFacts = [
-    ["Full Name", bio.fullName],
-    ["Date of Birth", bio.dateOfBirth],
-    ["Age", bio.age],
-    ["Position", bio.position],
-    ["Shoots/Catches", bio.shoots],
-    ["Height", bio.height],
-    ["Weight", bio.weight],
-    ["Nationality", bio.nationality],
-    ["Place of Birth", bio.placeOfBirth]
-  ].filter(function(fact) {
-    return fact[1] != null && fact[1] !== "";
-  });
-
-  const bioHtml = bioFacts.length
-    ? `<div class="ep-fact-grid">${bioFacts.map(function(fact) {
-        return `<div class="ep-fact"><span>${escapeHtml(fact[0])}</span><strong>${escapeHtml(String(fact[1]))}</strong></div>`;
-      }).join("")}</div>`
-    : `<p class="muted small ep-empty">No biography data yet.</p>`;
-
+  // Current Context: where the player is right now.
   const contextFacts = [
     ["Team", context.team],
     ["League", context.league],
-    ["Season", context.season]
+    ["Season", context.season],
+    ["Position", bio.position]
   ].filter(function(fact) {
     return fact[1] != null && fact[1] !== "";
   });
@@ -1080,17 +1096,25 @@ function renderEliteProspects() {
       }).join("")}</div>`
     : `<p class="muted small ep-empty">No current team on file.</p>`;
 
-  const seasonHtml = season.gp != null || season.season
-    ? statBoxGridHtml([
-        ["GP", season.gp],
-        ["G", season.goals],
-        ["A", season.assists],
-        ["PTS", season.points],
-        ["PIM", season.pim],
-        ["+/-", season.plusMinus != null ? `${season.plusMinus > 0 ? "+" : ""}${season.plusMinus}` : null]
-      ])
-    : `<p class="muted small ep-empty">No full season totals available.</p>`;
+  // Latest Full Season: only rendered at all when genuine season totals exist.
+  const hasFullSeason = season.gp != null;
+  const seasonHtml = hasFullSeason
+    ? `
+      <div class="ep-subcard">
+        <h4 class="ep-subcard-title">Latest Full Season${season.season ? ` <span class="ep-subcard-sub">${escapeHtml(String(season.season))}${season.team ? ` · ${escapeHtml(String(season.team))}` : ""}${season.league ? ` · ${escapeHtml(String(season.league))}` : ""}</span>` : ""}</h4>
+        ${statBoxGridHtml([
+          ["GP", season.gp],
+          ["G", season.goals],
+          ["A", season.assists],
+          ["PTS", season.points],
+          ["PIM", season.pim],
+          ["+/-", season.plusMinus != null ? `${season.plusMinus > 0 ? "+" : ""}${season.plusMinus}` : null]
+        ])}
+      </div>
+    `
+    : "";
 
+  // Recent Form: a rolling last-N-games window — never season totals.
   const recentFormHtml = recentForm.gp != null
     ? statBoxGridHtml([
         ["GP", recentForm.gp],
@@ -1099,7 +1123,26 @@ function renderEliteProspects() {
         ["PTS", recentForm.points],
         ["+/-", recentForm.plusMinus != null ? `${recentForm.plusMinus > 0 ? "+" : ""}${recentForm.plusMinus}` : null]
       ])
-    : `<p class="muted small ep-empty">No recent form data available.</p>`;
+    : `<p class="muted small ep-empty">No recent-game data available.</p>`;
+
+  // Player Information: bio facts only, never duplicating context/season values above.
+  const infoFacts = [
+    ["DOB", bio.dateOfBirth],
+    ["Age", bio.age],
+    ["Height", bio.height],
+    ["Weight", bio.weight],
+    ["Shoots", bio.shoots],
+    ["Birthplace", bio.placeOfBirth],
+    ["Nationality", bio.nationality]
+  ].filter(function(fact) {
+    return fact[1] != null && fact[1] !== "";
+  });
+
+  const infoHtml = infoFacts.length
+    ? `<div class="ep-fact-grid">${infoFacts.map(function(fact) {
+        return `<div class="ep-fact"><span>${escapeHtml(fact[0])}</span><strong>${escapeHtml(String(fact[1]))}</strong></div>`;
+      }).join("")}</div>`
+    : `<p class="muted small ep-empty">No player information on file.</p>`;
 
   const lastUpdated = epSync?.lastSuccessfulAt
     ? new Date(epSync.lastSuccessfulAt).toLocaleDateString()
@@ -1107,26 +1150,21 @@ function renderEliteProspects() {
 
   body.innerHTML = `
     <div class="ep-layout">
-      <div class="ep-row">
-        <div class="ep-subcard">
-          <h4 class="ep-subcard-title">Bio</h4>
-          ${bioHtml}
-        </div>
-        <div class="ep-subcard">
-          <h4 class="ep-subcard-title">Current Team</h4>
-          ${contextHtml}
-        </div>
-      </div>
       <div class="ep-subcard">
-        <h4 class="ep-subcard-title">Latest Season</h4>
-        ${seasonHtml}
+        <h4 class="ep-subcard-title">Current Context</h4>
+        ${contextHtml}
       </div>
+      ${seasonHtml}
       <div class="ep-subcard">
         <h4 class="ep-subcard-title">Recent Form${recentForm.spanGames ? ` <span class="ep-subcard-sub">Last ${escapeHtml(String(recentForm.spanGames))} Games</span>` : ""}</h4>
         ${recentFormHtml}
       </div>
+      <div class="ep-subcard">
+        <h4 class="ep-subcard-title">Player Information</h4>
+        ${infoHtml}
+      </div>
       <div class="ep-footer">
-        <span class="muted small">Last updated: ${escapeHtml(lastUpdated)}</span>
+        <span class="muted small">Synced from Elite Prospects · Last updated ${escapeHtml(lastUpdated)}</span>
         <a class="button secondary" href="${escapeHtml(player.eliteProspects)}" target="_blank" rel="noopener noreferrer">View Elite Prospects Profile</a>
       </div>
     </div>
@@ -1367,13 +1405,19 @@ function renderPrograms() {
                       </p>
                     </div>
 
-                    <button
-                      class="text-button"
-                      type="button"
-                      onclick="deleteProgram('${type}', '${escapeHtml(id)}')"
-                    >
-                      Delete
-                    </button>
+                    ${
+                      type === "playerInterested"
+                        ? `
+                          <button
+                            class="text-button"
+                            type="button"
+                            onclick="deleteProgram('${type}', '${escapeHtml(id)}')"
+                          >
+                            Delete
+                          </button>
+                        `
+                        : ""
+                    }
                   </div>
 
                   <p class="muted small">

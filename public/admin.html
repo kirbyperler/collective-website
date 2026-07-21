@@ -524,6 +524,15 @@
                   </button>
 
                   <button
+                    class="button secondary hidden"
+                    id="manageRecruitingButton"
+                    type="button"
+                    onclick="openManageRecruitingModal()"
+                  >
+                    Manage Recruiting
+                  </button>
+
+                  <button
                     class="button secondary"
                     type="button"
                     onclick="openFilesForSelectedUser()"
@@ -552,9 +561,9 @@
 
                 <div class="form-group hidden" id="eliteProspectsAdminSection" style="margin-top: 16px;">
 
-                  <p class="section-header">Elite Prospects</p>
+                  <p class="section-header">Elite Prospects <span class="badge" id="eliteProspectsSyncBadge">Not synced</span></p>
 
-                  <div class="muted small" id="eliteProspectsAdminBody"></div>
+                  <div id="eliteProspectsAdminBody"></div>
 
                   <button
                     class="button secondary"
@@ -834,9 +843,39 @@
         <!-- UPDATE PLAYER PROGRESS (opens in the shared modal) -->
         <div class="hidden" id="playerRatingSection">
 
-          <p class="field-hint">Enter a 0-100 rating and an optional note for each category, then save.</p>
+          <p class="field-hint">Edit any ratings or notes below, then save them all together. Nothing is saved until you click Save All Changes.</p>
 
           <div id="progressRatingEditor" class="progress-rating-editor"></div>
+
+          <p class="field-hint" id="progressSaveStatus"></p>
+
+          <div class="form-actions">
+            <button class="button full" type="button" id="saveAllRatingsButton" onclick="saveAllPlayerRatings()" disabled>Save All Changes</button>
+            <button class="button secondary full" type="button" onclick="resetProgressRatingEditor()">Reset</button>
+          </div>
+
+        </div>
+
+
+        <!-- MANAGE RECRUITING (opens in the shared modal) -->
+        <div class="hidden" id="recruitingAdminSection">
+
+          <p class="section-header" style="margin-top: 0; padding-top: 0; border-top: 0;">Programs Interested In This Player</p>
+          <p class="field-hint">Add, edit, or remove the programs recruiting this player. The player can see this list but cannot change it.</p>
+
+          <form class="inline-entry-form" onsubmit="addAdminProgram(event)">
+            <input class="field" id="adminProgramName" placeholder="Program name" required />
+            <select class="field" id="adminProgramLevel"></select>
+            <input class="field" id="adminProgramContact" placeholder="Contact or note" />
+            <button class="button secondary" type="submit">Add</button>
+          </form>
+
+          <div class="workspace-list inside-card" id="adminInterestedInPlayerList"></div>
+
+          <p class="section-header">Programs This Player Is Interested In</p>
+          <p class="field-hint">Managed by the player — view only here.</p>
+
+          <div class="workspace-list inside-card" id="adminPlayerInterestedList"></div>
 
         </div>
 

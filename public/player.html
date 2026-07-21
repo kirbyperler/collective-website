@@ -66,6 +66,15 @@
             </div>
           </article>
 
+          <section class="feature-stage" aria-label="Player image display">
+            <div class="stage-grid"></div><div class="stage-glow"></div>
+            <div class="stage-image-wrap">
+              <img id="stageAvatar" alt="Player" hidden />
+              <span id="stageAvatarPlaceholder">Player Image</span>
+            </div>
+            <strong>Collective</strong><p>Development is the difference</p>
+          </section>
+
           <article class="card messages-card overview-card">
             <div class="card-header"><span>Messages</span><button class="open-button" onclick="showPage('messages')">Open</button></div>
             <div class="card-body message-list">
@@ -85,9 +94,9 @@
           </article>
 
           <article class="card progress-card overview-card">
-            <div class="card-header"><span>Progress</span><button class="open-button" onclick="showPage('profile'); setProfilePanel('progress')">Open</button></div>
+            <div class="card-header"><span>Progress</span><button class="open-button" onclick="showPage('profile', {skipHistory:true}); setProfilePanel('progress')">Open</button></div>
             <div class="card-body progress-preview" id="overviewProgress"></div>
-            <button class="card-footer-button" onclick="showPage('profile'); setProfilePanel('progress')">Full Breakdown <span>›</span></button>
+            <button class="card-footer-button" onclick="showPage('profile', {skipHistory:true}); setProfilePanel('progress')">Full Breakdown <span>›</span></button>
           </article>
 
           <article class="card files-card overview-card">
@@ -157,7 +166,7 @@
       <section class="page" id="recruitingPage">
         <div class="workspace-header"><div><p class="eyebrow">Your Future</p><h2>Recruiting</h2></div><span class="pill" id="recruitingStatusPill">Career Status</span></div>
         <div class="recruiting-grid">
-          <article class="card"><div class="card-header"><span>Programs Interested In You</span><span class="pill" id="programsInterestedCount">0 programs</span></div><form class="inline-entry-form" onsubmit="addProgram(event, 'interestedInPlayer')"><input id="interestedInPlayerName" placeholder="Program name" required /><select id="interestedInPlayerLevel"></select><input id="interestedInPlayerContact" placeholder="Contact or note" /><button class="button" type="submit">Add</button></form><div class="workspace-list inside-card" id="programsInterestedList"></div></article>
+          <article class="card"><div class="card-header"><span>Programs Interested In You</span><span class="pill" id="programsInterestedCount">0 programs</span></div><p class="field-hint" style="padding: 12px 16px 0;">Maintained by your coach or advisor — view only.</p><div class="workspace-list inside-card" id="programsInterestedList"></div></article>
           <article class="card"><div class="card-header"><span>Programs You Are Interested In</span><span class="pill" id="playerInterestedCount">0 programs</span></div><form class="inline-entry-form" onsubmit="addProgram(event, 'playerInterested')"><input id="playerInterestedName" placeholder="Program name" required /><select id="playerInterestedLevel"></select><input id="playerInterestedContact" placeholder="Contact or note" /><button class="button" type="submit">Add</button></form><div class="workspace-list inside-card" id="playerInterestedList"></div></article>
         </div>
       </section>
