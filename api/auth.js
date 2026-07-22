@@ -43,21 +43,21 @@ function setSessionCookie(res, token) {
 
 async function login(req, res) {
   if (!allowMethods(req, res, ["POST"])) return;
-  const username = cleanText(req.body?.username, 100).toLowerCase();
+  const identifier = cleanText(req.body?.username, 100).toLowerCase();
   const password = String(req.body?.password || "");
-  if (!username || !password) return res.status(400).json({ message: "Username and password are required." });
+  if (!identifier || !password) return res.status(400).json({ message: "Username or email and password are required." });
 
   let role = null;
   let userId = null;
   let valid = false;
   const adminUsername = cleanText(process.env.ADMIN_USERNAME, 100).toLowerCase();
 
-  if (adminUsername && username === adminUsername) {
+  if (adminUsername && identifier === adminUsername) {
     role = "Admin";
     valid = verifyScrypt(password, process.env.ADMIN_PASSWORD_HASH || "");
   } else {
     const db = await getDb();
-    const user = await db.collection("users").findOne({ usernameLower: username });
+    const user = await db.collection("users").findOne({ $or: [{ usernameNormalized: identifier }, { email: identifier }] });
     if (user) {
       if (user.accountStatus !== "Active") return res.status(403).json({ message: "This account has not been activated." });
       role = normalizeRole(user.type);
@@ -93,14 +93,15 @@ async function completeSetup(req, res) {
   const db = await getDb();
   const users = db.collection("users");
   const setupTokenHash = createHash("sha256").update(token).digest("hex");
-  const pending = await users.findOne({ setupTokenHash, accountStatus: "Pending", setupTokenExpiresAt: { $gt: new Date() } });
+  const pending = await users.findOne({ setupTokenHash, setupTokenExpiresAt: { $gt: new Date() }, setupCompletedAt: { $exists: false } });
   if (!pending) return res.status(400).json({ error: "This setup link is invalid, expired, or already used." });
-  const usernameLower = username.toLowerCase();
-  const duplicate = await users.findOne({ usernameLower, _id: { $ne: pending._id } });
+  const usernameNormalized = username.toLowerCase();
+  const duplicate = await users.findOne({ usernameNormalized, _id: { $ne: pending._id } });
   if (duplicate) return res.status(409).json({ error: "That username is already taken." });
   const passwordHash = await bcrypt.hash(password, 12);
+  const setupCompletedAt = new Date();
   await users.updateOne({ _id: pending._id }, {
-    $set: { username, usernameLower, passwordHash, accountStatus: "Active", accountActivatedAt: new Date(), updatedAt: new Date() },
+    $set: { username, usernameNormalized, passwordHash, accountStatus: "Active", setupCompletedAt, updatedAt: setupCompletedAt },
     $unset: { setupTokenHash: "", setupTokenExpiresAt: "" }
   });
   return res.status(200).json({ message: "Your Collective account was created successfully." });

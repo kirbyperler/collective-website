@@ -1,12 +1,13 @@
-const crypto = require("crypto");
-const { Resend } = require("resend");
 const { getDb, toObjectId, serialize, getAvatarMap } = require("../lib/db");
 const { requireAdmin, requireStaff } = require("../lib/auth");
 const { action, allowMethods, cleanText, escapeRegex } = require("../lib/http");
 const { fetchEliteProspectsData, isValidEliteProspectsUrl } = require("../lib/eliteProspects");
+const { sendAccountSetupEmail, computeSetupStatus } = require("../lib/email");
 
 const USER_TYPES = ["Player", "Coach", "Advisor"];
 const CAREER_STATUSES = ["Youth", "Prep", "Juniors", "College", "Pro"];
+const BULK_SETUP_EMAIL_BATCH_SIZE = 5;
+const BULK_SETUP_EMAIL_BATCH_DELAY_MS = 1000;
 
 async function usersRoute(req, res, db) {
   if (!allowMethods(req, res, ["GET", "POST", "PATCH", "DELETE"])) return;
@@ -20,7 +21,8 @@ async function usersRoute(req, res, db) {
       filter.$or = ["firstName", "lastName", "email"].map(field => ({ [field]: { $regex: pattern, $options: "i" } }));
     }
     if (type) filter.type = type;
-    return res.status(200).json((await users.find(filter).sort({ lastName: 1 }).toArray()).map(serialize));
+    const records = await users.find(filter).sort({ lastName: 1 }).toArray();
+    return res.status(200).json(records.map(user => ({ ...serialize(user), setupStatus: computeSetupStatus(user) })));
   }
   if (req.method === "POST") {
     const body = req.body || {};
@@ -261,20 +263,16 @@ async function acceptInquiry(req, res, db) {
   if (!inquiry) return res.status(404).json({ error: "Inquiry not found." });
   const email = cleanText(inquiry.email, 200).toLowerCase();
   if (await users.findOne({ email })) return res.status(409).json({ error: "A user with this email already exists." });
-  const setupToken = crypto.randomBytes(32).toString("hex");
   const document = {
     firstName: inquiry.firstName || "", lastName: inquiry.lastName || "", email, phone: inquiry.phoneNumber || "",
     type: `${String(inquiry.role || "player").charAt(0).toUpperCase()}${String(inquiry.role || "player").slice(1).toLowerCase()}`,
     birthYear: inquiry.birthYear || "", position: inquiry.position || "", eliteProspects: inquiry.eliteProspects || "", files: [], careerStatus: "Youth",
-    username: null, usernameLower: null, passwordHash: null, accountStatus: "Pending",
-    setupTokenHash: crypto.createHash("sha256").update(setupToken).digest("hex"),
-    setupTokenExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), createdAt: new Date(), updatedAt: new Date()
+    username: null, usernameNormalized: null, passwordHash: null, accountStatus: "Pending",
+    createdAt: new Date(), updatedAt: new Date()
   };
   const inserted = await users.insertOne(document);
-  const setupUrl = `${process.env.SITE_URL.replace(/\/$/, "")}/setup-account.html?token=${encodeURIComponent(setupToken)}`;
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const { error } = await resend.emails.send({ from: "Collective <onboarding@resend.dev>", to: [email], subject: "Set up your Collective account", html: `<p>Hi ${document.firstName},</p><p>Your inquiry was accepted.</p><p><a href="${setupUrl}">Create your account</a></p>`, text: `Create your Collective account: ${setupUrl}` });
-  if (error) { await users.deleteOne({ _id: inserted.insertedId }); return res.status(502).json({ error: error.message || "Invitation email failed." }); }
+  const emailResult = await sendAccountSetupEmail(db, { _id: inserted.insertedId, email, firstName: document.firstName });
+  if (!emailResult.success) { await users.deleteOne({ _id: inserted.insertedId }); return res.status(502).json({ error: emailResult.error }); }
   await inquiries.deleteOne({ _id: inquiryId });
 
   const epFields = {};
@@ -290,6 +288,54 @@ async function acceptInquiry(req, res, db) {
   }
 
   return res.status(201).json({ message: "Inquiry accepted and setup email sent.", user: serialize({ ...document, ...epFields, _id: inserted.insertedId }) });
+}
+
+// Used for both the "Send Setup Email" and "Resend Setup Email" admin actions --
+// sendAccountSetupEmail always issues a fresh token, which invalidates any prior one.
+async function sendSetupEmailRoute(req, res, db) {
+  if (!allowMethods(req, res, ["POST"])) return;
+  if (!process.env.RESEND_API_KEY || !process.env.SITE_URL) return res.status(500).json({ error: "RESEND_API_KEY and SITE_URL are required." });
+  const users = db.collection("users");
+  const userId = toObjectId(req.body?.userId || req.body?.id);
+  if (!userId) return res.status(400).json({ error: "A valid user ID is required." });
+  const user = await users.findOne({ _id: userId });
+  if (!user) return res.status(404).json({ error: "User not found." });
+  if (user.accountStatus === "Active" || user.setupCompletedAt) return res.status(400).json({ error: "This account has already been activated." });
+  const result = await sendAccountSetupEmail(db, user);
+  if (!result.success) return res.status(502).json({ error: result.error });
+  const updated = await users.findOne({ _id: userId });
+  return res.status(200).json({ message: "Setup email sent.", user: { ...serialize(updated), setupStatus: computeSetupStatus(updated) } });
+}
+
+function isEligibleForSetupEmail(user) {
+  const email = cleanText(user.email, 200);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
+  if (user.accountStatus === "Active" || user.setupCompletedAt) return false;
+  return true;
+}
+
+async function sendBulkSetupEmailsRoute(req, res, db) {
+  if (!allowMethods(req, res, ["POST"])) return;
+  if (!process.env.RESEND_API_KEY || !process.env.SITE_URL) return res.status(500).json({ error: "RESEND_API_KEY and SITE_URL are required." });
+  const users = db.collection("users");
+  const candidates = await users.find({ accountStatus: { $ne: "Active" }, setupCompletedAt: { $exists: false } }).toArray();
+
+  const eligible = candidates.filter(isEligibleForSetupEmail);
+  let sent = 0;
+  let failed = 0;
+  const skipped = candidates.length - eligible.length;
+
+  for (let i = 0; i < eligible.length; i += BULK_SETUP_EMAIL_BATCH_SIZE) {
+    const batch = eligible.slice(i, i + BULK_SETUP_EMAIL_BATCH_SIZE);
+    const outcomes = await Promise.allSettled(batch.map(user => sendAccountSetupEmail(db, user)));
+    for (const outcome of outcomes) {
+      if (outcome.status === "fulfilled" && outcome.value.success) sent++;
+      else failed++;
+    }
+    if (i + BULK_SETUP_EMAIL_BATCH_SIZE < eligible.length) await sleep(BULK_SETUP_EMAIL_BATCH_DELAY_MS);
+  }
+
+  return res.status(200).json({ sent, failed, skipped });
 }
 
 async function refreshEliteProspectsRoute(req, res, db) {
@@ -365,6 +411,8 @@ module.exports = async function handler(req, res) {
     if (route === "progress") return progressRoute(req, res, db, session);
     if (route === "programs") return programsRoute(req, res, db);
     if (route === "accept-inquiry") return acceptInquiry(req, res, db);
+    if (route === "send-setup-email") return sendSetupEmailRoute(req, res, db);
+    if (route === "send-setup-emails-bulk") return sendBulkSetupEmailsRoute(req, res, db);
     if (route === "refresheliteprospects") return refreshEliteProspectsRoute(req, res, db);
     return res.status(404).json({ error: "Admin action not found." });
   } catch (error) {

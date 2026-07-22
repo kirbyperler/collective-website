@@ -2,6 +2,8 @@ const ADMIN_API = {
   users: "/api/admin?action=users",
   messages: "/api/admin?action=messages",
   acceptInquiry: "/api/admin?action=accept-inquiry",
+  sendSetupEmail: "/api/admin?action=send-setup-email",
+  sendSetupEmailsBulk: "/api/admin?action=send-setup-emails-bulk",
   progress: "/api/admin?action=progress",
   programs: "/api/admin?action=programs",
   refreshEliteProspects: "/api/admin?action=refreshEliteProspects",
@@ -40,6 +42,81 @@ async function readApiResponse(response) {
 
 function fullName(user) {
   return `${user.firstName || ""} ${user.lastName || ""}`.trim();
+}
+
+function accountStatusBadgeHtml(user) {
+  const status = user.setupStatus || "Pending Setup";
+  return `<span class="badge badge-status-${status.toLowerCase().replace(/\s+/g, "-")}">${escapeHtml(status)}</span>`;
+}
+
+function setupEmailButtonHtml(user) {
+  const status = user.setupStatus || "Pending Setup";
+  if (status === "Active") return "";
+  const label = status === "Pending Setup" ? "Send Setup Email" : "Resend Setup Email";
+  return `<button class="text-button" type="button" onclick="sendSetupEmail('${escapeHtml(user.id)}')">${label}</button>`;
+}
+
+async function sendSetupEmail(userId) {
+  const user = users.find(function(item) { return item.id === userId; });
+  if (!user) {
+    alert("User not found.");
+    return;
+  }
+
+  const status = user.setupStatus || "Pending Setup";
+  const verb = status === "Pending Setup" ? "Send" : "Resend";
+  if (!confirm(`${verb} the setup email to ${fullName(user)}?`)) return;
+
+  try {
+    const response = await fetch(ADMIN_API.sendSetupEmail, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId })
+    });
+
+    const data = await readApiResponse(response);
+    if (!response.ok) {
+      throw new Error(data.error || data.message || "Failed to send the setup email.");
+    }
+
+    await loadUsers();
+    renderDatabase();
+    if (selectedUserId === userId) {
+      const refreshed = users.find(function(item) { return item.id === userId; });
+      renderUserSummary(refreshed);
+    }
+
+    alert(data.message || "Setup email sent.");
+  } catch (error) {
+    console.error("Send setup email error:", error);
+    alert(error.message);
+  }
+}
+
+async function sendBulkSetupEmails() {
+  if (!confirm("Send setup emails to all pending users? This may take a moment.")) return;
+
+  try {
+    const response = await fetch(ADMIN_API.sendSetupEmailsBulk, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    const data = await readApiResponse(response);
+    if (!response.ok) {
+      throw new Error(data.error || data.message || "Failed to send setup emails.");
+    }
+
+    await loadUsers();
+    renderDatabase();
+
+    alert(`Sent: ${data.sent}. Failed: ${data.failed}. Skipped: ${data.skipped}.`);
+  } catch (error) {
+    console.error("Bulk send setup emails error:", error);
+    alert(error.message);
+  }
 }
 
 async function loadUsers() {
@@ -640,6 +717,12 @@ function renderUserSummary(user) {
         <span class="badge badge-role">${escapeHtml(user.type || "")}</span>
       </div>
     </div>
+
+    <p class="section-header">Account Status</p>
+    <div class="info-grid">
+      <div class="info-row"><span>Status</span>${accountStatusBadgeHtml(user)}</div>
+    </div>
+    ${setupEmailButtonHtml(user)}
 
     <p class="section-header">Contact</p>
     <div class="info-grid">
@@ -2477,6 +2560,18 @@ function renderDatabase() {
       `Showing all ${activeDatabaseFilter.toLowerCase()} records.`;
   }
 
+  const bulkButton =
+    document.getElementById(
+      "bulkSendSetupEmailsButton"
+    );
+
+  if (bulkButton) {
+    bulkButton.classList.toggle(
+      "hidden",
+      activeDatabaseFilter !== "Users"
+    );
+  }
+
   if (
     [
       "Users",
@@ -2514,6 +2609,10 @@ function renderDatabase() {
                 ${escapeHtml(user.phone || "No phone")}
               </p>
 
+              <p class="muted small">
+                ${accountStatusBadgeHtml(user)}
+              </p>
+
               <button
                 class="text-button"
                 type="button"
@@ -2521,6 +2620,8 @@ function renderDatabase() {
               >
                 Open user
               </button>
+
+              ${setupEmailButtonHtml(user)}
             </div>
           `;
         })
